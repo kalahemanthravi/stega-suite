@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StegaScan | Professional Integrity Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1', // Indigo
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f9fafb;
+            /* Gray-50 */
+        }
+
+        .glass-card {
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f3f4f6;
+        }
+
+        /* Custom Checkbox */
+        .custom-checkbox {
+            appearance: none;
+            background-color: #fff;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25em;
+            display: grid;
+            place-content: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .custom-checkbox::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em white;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        .custom-checkbox:checked {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+
+        .custom-checkbox:checked::before {
+            transform: scale(1);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-gray-800 font-sans antialiased flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div class="bg-brand-600 text-white p-1.5 rounded-lg">
+                        <i class="fas fa-layer-group text-lg"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">StegaScan</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-500 hidden sm:block">Secure File Integrity Analysis</span>
+                    <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors"><i
+                            class="fab fa-github text-xl"></i></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-8">
+        <div class="w-full max-w-2xl space-y-6">
+
+            <!-- Hero Text -->
+            <div class="text-center space-y-2 mb-8">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Analyze File Integrity</h1>
+                <p class="text-gray-500 text-lg max-w-lg mx-auto">
+                    Detect hidden payloads, verifying file structure signatures securely on your local machine.
+                </p>
+
+                <!-- Capabilities Banner -->
+                <div class="max-w-md mx-auto mt-4 text-xs text-left bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p class="font-bold text-gray-700 mb-1"><i class="fas fa-radar"></i> Detection Capabilities:</p>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600">
+                        <li><span class="text-green-600 font-bold">CAN Detect:</span> Payloads from the standard <a
+                                href="#" onclick="parent.loadTool(this, 'stega-file-behind-file-encrypter.html')"
+                                class="underline hover:text-gray-900">File Behind File</a> tool.</li>
+                        <li><span class="text-red-500 font-bold">CANNOT Detect:</span> Advanced LSB steganography from
+                            the <a href="#" onclick="parent.loadTool(this, 'steganography file behind file-high.html')"
+                                class="underline hover:text-gray-900">High Security</a> tool.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main Application Card -->
+            <div class="glass-card rounded-2xl overflow-hidden p-1">
+                <div class="p-6 sm:p-8 space-y-8 bg-white rounded-xl">
+
+                    <!-- 1. Upload Section -->
+                    <div id="uploadSection" class="transition-all duration-300">
+                        <div id="dropZone"
+                            class="border-2 border-dashed border-gray-300 rounded-xl p-10 flex flex-col items-center justify-center text-center cursor-pointer hover:border-brand-500 hover:bg-brand-50 transition-all group relative overflow-hidden"
+                            onclick="document.getElementById('fileInput').click()">
+
+                            <input type="file" id="fileInput" class="hidden"
+                                onchange="handleFileSelection(this.files[0])">
+
+                            <!-- Icon Circle -->
+                            <div
+                                class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-white group-hover:scale-110 transition-transform shadow-sm">
+                                <i
+                                    class="fas fa-cloud-upload-alt text-2xl text-gray-400 group-hover:text-brand-600 transition-colors"></i>
+                            </div>
+
+                            <h3 class="text-lg font-semibold text-gray-900">Click to upload or drag and drop</h3>
+                            <p class="text-sm text-gray-500 mt-1">Supports Images (PNG, JPG), Archives, and Documents
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 2. Staged File View (Hidden by default) -->
+                    <div id="stagedFileSection" class="hidden animate-slide-up">
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                            <div class="flex items-center gap-4 overflow-hidden">
+                                <div
+                                    class="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center flex-shrink-0 text-brand-600">
+                                    <i class="fas fa-file-lines text-lg"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-medium text-gray-900 truncate" id="stagedFileName">filename.ext</p>
+                                    <p class="text-xs text-gray-500" id="stagedFileSize">0 KB</p>
+                                </div>
+                            </div>
+                            <button onclick="resetUpload()"
+                                class="text-gray-400 hover:text-red-500 transition-colors p-2" title="Remove file">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Terms & Action Section -->
+                    <div class="border-t border-gray-100 pt-6">
+
+                        <!-- Checkbox -->
+                        <div class="flex items-start gap-3 mb-6">
+                            <input type="checkbox" id="termsCheckbox" class="custom-checkbox mt-1 flex-shrink-0"
+                                onchange="toggleAnalyzeButton()">
+                            <label for="termsCheckbox"
+                                class="text-sm text-gray-600 leading-relaxed select-none cursor-pointer">
+                                I confirm that I am the authorized owner of this file or have explicit permission to
+                                analyze it.
+                                I verify that this activity is for defensive security or educational purposes only.
+                                I agree to the <button
+                                    class="text-brand-600 hover:text-brand-700 font-semibold underline decoration-1 underline-offset-2"
+                                    onclick="openModal(event)">Terms and Conditions</button>.
+                            </label>
+                        </div>
+
+                        <!-- Analyze Button -->
+                        <button id="analyzeBtn" onclick="runAnalysis()" disabled
+                            class="w-full py-3 px-4 rounded-xl font-semibold text-white shadow-sm flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none bg-gray-400 cursor-not-allowed">
+                            <span>Analyze File Structure</span>
+                            <i class="fas fa-arrow-right text-sm"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Results Section (Hidden by default) -->
+            <div id="resultSection" class="hidden animate-slide-up space-y-6">
+
+                <!-- Verdict Banner -->
+                <div id="verdictBanner" class="p-4 rounded-xl border flex items-center gap-4 bg-white shadow-sm">
+                    <!-- Icon populated by JS -->
+                    <div id="verdictIconBox" class="p-3 rounded-full shrink-0"></div>
+                    <div>
+                        <h3 id="verdictTitle" class="text-lg font-bold"></h3>
+                        <p id="verdictDesc" class="text-sm text-gray-600"></p>
+                    </div>
+                </div>
+
+                <!-- Detailed Grid -->
+                <div class="grid md:grid-cols-2 gap-4">
+                    <!-- Carrier Card -->
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div
+                            class="flex items-center gap-2 mb-4 text-gray-500 uppercase text-xs font-bold tracking-wider">
+                            <i class="fas fa-file"></i> Carrier Details
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-sm text-gray-500">File Type</span>
+                                <span class="text-sm font-medium text-gray-900" id="resCarrierType">-</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-sm text-gray-500">Total Size</span>
+                                <span class="text-sm font-medium text-gray-900" id="resCarrierSize">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-500">Signature</span>
+                                <span
+                                    class="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">Valid</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payload Card -->
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+                        <div
+                            class="flex items-center gap-2 mb-4 text-gray-500 uppercase text-xs font-bold tracking-wider">
+                            <i class="fas fa-box-open"></i> Payload Data
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="payloadEmpty" class="text-center py-4 text-gray-400 text-sm italic">
+                            No hidden data detected.
+                        </div>
+
+                        <!-- Detected State -->
+                        <div id="payloadData" class="hidden space-y-3">
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-sm text-gray-500">Hidden File</span>
+                                <span class="text-sm font-medium text-red-600" id="resSecretName">-</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-100 pb-2">
+                                <span class="text-sm text-gray-500">Data Size</span>
+                                <span class="text-sm font-medium text-gray-900" id="resSecretSize">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-500">Encryption</span>
+                                <span class="text-sm font-bold text-brand-600 flex items-center gap-1">
+                                    <i class="fas fa-lock text-xs"></i> AES-256
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="glass-card rounded-2xl p-6 bg-white border border-gray-100 mt-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                    <i class="fas fa-microscope text-brand-600"></i> About this Tool
+                </h3>
+                <div class="text-sm text-gray-600 space-y-2">
+                    <p>
+                        This detector checks files for signatures left by the "Standard" Stega Suite tools (like
+                        File-Behind-File Append mode).
+                        It is designed to help you verify if a file might contain hidden data created by this suite.
+                    </p>
+                    <p>
+                        <strong>How to use:</strong> Simply drop a file into the upload zone and click "Analyze".
+                        The tool will scan the file structure and report if any hidden data partitions are found.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Terms Modal -->
+    <div id="termsModal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 modal-overlay" onclick="closeModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col animate-slide-up">
+
+                <!-- Modal Header -->
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
+                    <h3 class="text-lg font-bold text-gray-900">Terms and Conditions</h3>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6 overflow-y-auto text-sm text-gray-600 space-y-4 leading-relaxed">
+                    <p><strong>Last Updated: January 4, 2026</strong></p>
+
+                    <p>By using the StegaScan software ("Service"), you agree to the following strictly enforced terms:
+                    </p>
+
+                    <h4 class="font-bold text-gray-900 mt-4">1. Authorized Use Only</h4>
+                    <p>You verify that you are the legal owner of any file uploaded to this Service, or possess explicit
+                        written consent from the owner to analyze the file. Unauthorized analysis of third-party files
+                        is strictly prohibited.</p>
+
+                    <h4 class="font-bold text-gray-900 mt-4">2. No Illegal Activities</h4>
+                    <p>You agree not to use this Service to recover, distribute, or validate malware, illegal
+                        contraband, copyrighted material without license, or any data related to criminal activities.
+                    </p>
+
+                    <h4 class="font-bold text-gray-900 mt-4">3. Limitation of Liability</h4>
+                    <p>The developers of StegaScan accept no liability for data loss, corruption, or legal consequences
+                        arising from the use of this tool. The tool runs entirely client-side; however, you assume all
+                        risks associated with processing potentially malicious files.</p>
+
+                    <h4 class="font-bold text-gray-900 mt-4">4. Privacy & Data Handling</h4>
+                    <p>This tool operates within your browser sandbox. No file data is transmitted to external servers.
+                        However, we do not guarantee the security of your local environment.</p>
+
+                    <div class="bg-gray-100 p-3 rounded-lg text-xs mt-4">
+                        <strong>Legal Disclaimer:</strong> This is a client-side utility for educational and defensive
+                        security purposes. Misuse may violate the Computer Fraud and Abuse Act (CFAA) or local laws.
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="p-4 border-t border-gray-100 flex justify-end">
+                    <button onclick="acceptTermsInModal()"
+                        class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                        I Understand & Agree
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants matching the encryption tool logic
+        const MAGIC_SIGNATURE = "STEGA_DRIVE_V1";
+        const SIG_LENGTH = 14;
+
+        let currentFile = null;
+
+        // --- UI Logic ---
+
+        function handleFileSelection(file) {
+            if (!file) return;
+            currentFile = file;
+
+            // UI Update: Hide drop zone, show file strip
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('stagedFileSection').classList.remove('hidden');
+
+            // Populate File Details
+            document.getElementById('stagedFileName').innerText = file.name;
+            document.getElementById('stagedFileSize').innerText = formatSize(file.size);
+
+            // Hide previous results if any
+            document.getElementById('resultSection').classList.add('hidden');
+
+            // Reset Checkbox & Button
+            document.getElementById('termsCheckbox').checked = false;
+            toggleAnalyzeButton();
+        }
+
+        function resetUpload() {
+            currentFile = null;
+            document.getElementById('fileInput').value = ''; // Reset input
+
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('stagedFileSection').classList.add('hidden');
+            document.getElementById('resultSection').classList.add('hidden');
+
+            document.getElementById('termsCheckbox').checked = false;
+            toggleAnalyzeButton();
+        }
+
+        function toggleAnalyzeButton() {
+            const checkbox = document.getElementById('termsCheckbox');
+            const btn = document.getElementById('analyzeBtn');
+            const isFileLoaded = currentFile !== null;
+
+            if (checkbox.checked && isFileLoaded) {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.add('bg-brand-600', 'hover:bg-brand-700', 'cursor-pointer');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.remove('bg-brand-600', 'hover:bg-brand-700', 'cursor-pointer');
+            }
+        }
+
+        // --- Modal Logic ---
+
+        function openModal(e) {
+            e.preventDefault();
+            document.getElementById('termsModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('termsModal').classList.add('hidden');
+        }
+
+        function acceptTermsInModal() {
+            document.getElementById('termsCheckbox').checked = true;
+            toggleAnalyzeButton();
+            closeModal();
+        }
+
+        // --- Analysis Logic ---
+
+        async function runAnalysis() {
+            if (!currentFile) return;
+
+            const btn = document.getElementById('analyzeBtn');
+            const originalText = btn.innerHTML;
+
+            // Loading State
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            // Simulate processing delay for effect
+            await new Promise(r => setTimeout(r, 800));
+
+            try {
+                // 1. Check File Size
+                if (currentFile.size < SIG_LENGTH + 8) {
+                    displayCleanVerdict(); // File too small to be infected
+                } else {
+                    // 2. Read Tail (Signature)
+                    const tailSlice = currentFile.slice(currentFile.size - SIG_LENGTH, currentFile.size);
+                    const tailBuffer = await readFile(tailSlice);
+                    const signature = new TextDecoder().decode(tailBuffer);
+
+                    if (signature !== MAGIC_SIGNATURE) {
+                        displayCleanVerdict();
+                    } else {
+                        // INFECTED FOUND
+                        await extractAndDisplayPayload();
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error analyzing file: " + err.message);
+            }
+
+            // Restore Button
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+
+            // Show Result Section
+            document.getElementById('resultSection').classList.remove('hidden');
+
+            // Scroll to results
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function extractAndDisplayPayload() {
+            const file = currentFile;
+
+            // Footer layout: [MetaLen (4)][EncLen (4)][Signature (14)]
+            const footerSlice = file.slice(file.size - (SIG_LENGTH + 8), file.size - SIG_LENGTH);
+            const footerBuffer = await readFile(footerSlice);
+            const dataView = new DataView(footerBuffer);
+
+            const metaLen = dataView.getUint32(4, true);
+
+            // Read Metadata
+            const metaStart = file.size - (SIG_LENGTH + 8 + metaLen);
+            const metaSlice = file.slice(metaStart, metaStart + metaLen);
+            const metaBuffer = await readFile(metaSlice);
+
+            try {
+                const metaJson = new TextDecoder().decode(metaBuffer);
+                const metadata = JSON.parse(metaJson);
+                displayInfectedVerdict(metadata);
+            } catch (e) {
+                displayInfectedVerdict(null); // Corrupted but detected
+            }
+        }
+
+        // --- Verdict Display Helpers ---
+
+        function displayCleanVerdict() {
+            const banner = document.getElementById('verdictBanner');
+            const iconBox = document.getElementById('verdictIconBox');
+            const title = document.getElementById('verdictTitle');
+            const desc = document.getElementById('verdictDesc');
+
+            banner.className = 'p-4 rounded-xl border flex items-center gap-4 bg-green-50 border-green-100 shadow-sm';
+            iconBox.className = 'p-3 rounded-full shrink-0 bg-green-100 text-green-600';
+            iconBox.innerHTML = '<i class="fas fa-check-circle text-xl"></i>';
+            title.innerText = "No Hidden Data Detected";
+            title.className = "text-lg font-bold text-green-900";
+            desc.innerText = "The file structure matches standard format specifications. No StegaSuite signatures found.";
+
+            // Card Details
+            document.getElementById('resCarrierType').innerText = currentFile.type || 'Unknown';
+            document.getElementById('resCarrierSize').innerText = formatSize(currentFile.size);
+
+            document.getElementById('payloadEmpty').classList.remove('hidden');
+            document.getElementById('payloadData').classList.add('hidden');
+        }
+
+        function displayInfectedVerdict(metadata) {
+            const banner = document.getElementById('verdictBanner');
+            const iconBox = document.getElementById('verdictIconBox');
+            const title = document.getElementById('verdictTitle');
+            const desc = document.getElementById('verdictDesc');
+
+            banner.className = 'p-4 rounded-xl border flex items-center gap-4 bg-red-50 border-red-100 shadow-sm';
+            iconBox.className = 'p-3 rounded-full shrink-0 bg-red-100 text-red-600';
+            iconBox.innerHTML = '<i class="fas fa-exclamation-triangle text-xl"></i>';
+            title.innerText = "Hidden Payload Detected";
+            title.className = "text-lg font-bold text-red-900";
+            desc.innerText = "This file contains a hidden StegaSuite data partition. Proceed with caution.";
+
+            // Card Details
+            document.getElementById('resCarrierType').innerText = currentFile.type || 'Unknown';
+            document.getElementById('resCarrierSize').innerText = formatSize(currentFile.size);
+
+            document.getElementById('payloadEmpty').classList.add('hidden');
+            document.getElementById('payloadData').classList.remove('hidden');
+
+            if (metadata) {
+                document.getElementById('resSecretName').innerText = metadata.name;
+                document.getElementById('resSecretSize').innerText = formatSize(metadata.size);
+            } else {
+                document.getElementById('resSecretName').innerText = "Corrupted/Unknown";
+                document.getElementById('resSecretSize').innerText = "Unknown";
+            }
+        }
+
+        // --- Utilities ---
+
+        function readFile(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Drag & Drop Listeners
+        const dropZone = document.getElementById('dropZone');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-brand-500', 'bg-brand-50');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-brand-500', 'bg-brand-50');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-brand-500', 'bg-brand-50');
+            if (e.dataTransfer.files.length) handleFileSelection(e.dataTransfer.files[0]);
+        });
+
+    </script>
+</body>
+
+</html>

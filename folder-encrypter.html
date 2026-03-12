@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stega Vault - Unlimited Stream Encrypter</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #06b6d4;
+            --primary-hover: #0891b2;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: var(--bg-card);
+            padding: 0.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.2);
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 0.75rem;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            transition: all 0.2s;
+            background: rgba(15, 23, 42, 0.3);
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(6, 182, 212, 0.05);
+        }
+
+        .drop-zone i {
+            width: 48px;
+            height: 48px;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .drop-zone p {
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .drop-zone .file-name {
+            color: var(--primary);
+            font-weight: 600;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+
+        /* Password Input */
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        /* Action Button */
+        .action-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            background: var(--border);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .progress-bar-bg {
+            background: var(--bg-dark);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background: var(--primary);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        /* Log Area (New) */
+        .log-area {
+            margin-top: 1rem;
+            background: #000;
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--success);
+            display: none;
+        }
+
+        /* Output Options (New) */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-card:hover,
+        .option-card.selected {
+            border-color: var(--primary);
+            background: rgba(6, 182, 212, 0.1);
+        }
+
+        .option-card h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .option-card p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .modal-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            color: var(--primary);
+            margin: 1.5rem 0 0.5rem 0;
+        }
+
+        .modal-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .modal-content p,
+        .modal-content ul {
+            margin-bottom: 1rem;
+            color: var(--text-muted);
+        }
+
+        .modal-content ul {
+            padding-left: 1.5rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .footer-links button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.875rem;
+        }
+
+        /* Error state */
+        .msg-box {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-msg {
+            color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+        }
+
+        .warning-banner {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <i data-lucide="infinity" color="#06b6d4"></i>
+            Stega Suite <span>Vault</span>
+        </div>
+        <div style="font-size: 0.875rem; color: var(--text-muted);">
+            v2.1 Stream
+        </div>
+    </header>
+
+    <main>
+        <div class="warning-banner" id="compat-warning">
+            <i data-lucide="alert-triangle" style="width: 16px; display: inline; vertical-align: text-bottom;"></i>
+            <strong>Device Warning:</strong> This "Unlimited Stream" tool requires the File System Access API. It works
+            on Desktop Chrome/Edge but will NOT work on Mobile, Firefox, or Safari.
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('encrypt')" id="tab-encrypt">
+                <i data-lucide="hard-drive-upload"></i> Encrypt (Stream)
+            </button>
+            <button class="tab-btn" onclick="switchTab('decrypt')" id="tab-decrypt">
+                <i data-lucide="hard-drive-download"></i> Decrypt (Stream)
+            </button>
+        </div>
+
+        <div class="card">
+
+            <!-- ENCRYPT SECTION -->
+            <div id="encrypt-section">
+                <!-- Drop Zone -->
+                <div class="drop-zone" id="drop-zone-encrypt">
+                    <i data-lucide="folder-up"></i>
+                    <p><strong>Drag & Drop Folder</strong> or Click to Browse</p>
+                    <div id="enc-status" style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">
+                        Unlimited file size supported
+                    </div>
+                </div>
+
+                <!-- Format Selection -->
+                <label style="margin-top: 1.5rem;">Select Output Format</label>
+                <div class="options-grid">
+                    <div class="option-card selected" id="opt-vault" onclick="selectFormat('vault')">
+                        <h4><i data-lucide="binary"></i> .vault (Binary)</h4>
+                        <p>Compact, standard encrypted binary format.</p>
+                    </div>
+                    <div class="option-card" id="opt-txt" onclick="selectFormat('txt')">
+                        <h4><i data-lucide="file-text"></i> .txt (Base64)</h4>
+                        <p>Text-safe output. Larger size (approx 33% larger).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DECRYPT SECTION -->
+            <div id="decrypt-section" style="display: none;">
+                <div class="drop-zone" id="drop-zone-decrypt">
+                    <i data-lucide="file-key"></i>
+                    <p><strong>Drag .vault or .txt File</strong> or Click to Browse</p>
+                    <div id="dec-status" class="file-name"></div>
+                </div>
+                <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+                    <i data-lucide="info" style="width:14px; display:inline;"></i>
+                    Files will be restored into a new folder created inside your selected location.
+                </div>
+            </div>
+
+            <!-- SHARED: Password -->
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label>Vault Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" placeholder="Encryption Key">
+                    <button class="toggle-password" onclick="togglePassword()">
+                        <i data-lucide="eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SHARED: Terms Checkbox -->
+            <div class="form-group"
+                style="display: flex; align-items: flex-start; gap: 0.75rem; background: rgba(15, 23, 42, 0.5); padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                <input type="checkbox" id="terms-check"
+                    style="width: 20px; height: 20px; margin-top: 0.1rem; cursor: pointer;">
+                <label for="terms-check" style="font-size: 0.8rem; line-height: 1.4; margin: 0; cursor: pointer;">
+                    I accept the <strong onclick="openModal('terms')"
+                        style="cursor:pointer; text-decoration:underline; color: var(--primary);">Terms &
+                        Conditions</strong>. I acknowledge that use of this tool is entirely at my own risk and that the
+                    developers assume <strong>NO LIABILITY</strong> for data loss.
+                </label>
+            </div>
+
+            <!-- Msg & Progress -->
+            <div id="msg-box" class="msg-box"></div>
+
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0%</div>
+            </div>
+
+            <div class="log-area" id="log-area"></div>
+
+            <!-- Action Button -->
+            <button class="action-btn" onclick="startProcess()" id="action-btn" style="margin-top: 1.5rem;">
+                <i data-lucide="play"></i> Start Processing
+            </button>
+            <button class="action-btn" onclick="cancelProcess()" id="cancel-btn"
+                style="background: var(--error); margin-top: 0.5rem; display: none;">
+                Cancel Operation
+            </button>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Stega Suite. Local Stream Processing.</p>
+        <div class="footer-links">
+            <button onclick="openModal('terms')">Terms & Conditions</button>
+            <button onclick="openModal('privacy')">Privacy Policy</button>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Info</h2>
+                <button class="close-modal" onclick="closeModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-content" id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Check Compatibility immediately
+        if (!window.showSaveFilePicker) {
+            document.getElementById('compat-warning').style.display = 'block';
+        }
+
+        // --- GLOBAL STATE ---
+        let currentMode = 'encrypt';
+        let selectedFormat = 'vault';
+        let itemsToProcess = []; // Files for encryption
+        let sourceFile = null; // File for decryption
+        let isProcessing = false;
+        let shouldCancel = false;
+
+        // --- CONSTANTS ---
+        const CHUNK_SIZE = 1024 * 1024 * 1; // 1MB chunks
+        const MAGIC_HEADER = new TextEncoder().encode("STEGAVAULTv2"); // 12 bytes
+        const MARKER_FILE = 1;
+        const MARKER_DATA = 2;
+        const MARKER_END = 255;
+
+        // --- UI FUNCTIONS ---
+        function switchTab(mode) {
+            currentMode = mode;
+            document.getElementById('tab-encrypt').className = mode === 'encrypt' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tab-decrypt').className = mode === 'decrypt' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('encrypt-section').style.display = mode === 'encrypt' ? 'block' : 'none';
+            document.getElementById('decrypt-section').style.display = mode === 'decrypt' ? 'block' : 'none';
+
+            // Reset
+            itemsToProcess = [];
+            sourceFile = null;
+            document.getElementById('enc-status').innerText = 'Unlimited file size supported';
+            document.getElementById('dec-status').innerText = '';
+            document.getElementById('log-area').style.display = 'none';
+            document.getElementById('log-area').innerHTML = '';
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('terms-check').checked = false;
+        }
+
+        function selectFormat(fmt) {
+            selectedFormat = fmt;
+            document.getElementById('opt-vault').className = fmt === 'vault' ? 'option-card selected' : 'option-card';
+            document.getElementById('opt-txt').className = fmt === 'txt' ? 'option-card selected' : 'option-card';
+        }
+
+        function togglePassword() {
+            const x = document.getElementById('password');
+            x.type = x.type === 'password' ? 'text' : 'password';
+        }
+
+        function log(msg) {
+            const el = document.getElementById('log-area');
+            el.style.display = 'block';
+            el.innerHTML += `<div>> ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('msg-box');
+            el.innerText = msg;
+            el.className = 'msg-box error-msg';
+            el.style.display = 'block';
+        }
+
+        function toggleProcessing(active) {
+            isProcessing = active;
+            document.getElementById('action-btn').style.display = active ? 'none' : 'flex';
+            document.getElementById('cancel-btn').style.display = active ? 'flex' : 'none';
+            if (!active) shouldCancel = false;
+        }
+
+        function cancelProcess() {
+            if (isProcessing) {
+                shouldCancel = true;
+                log("Cancelling... Please wait for current chunk.");
+            }
+        }
+
+        // --- DRAG & DROP ---
+        // Hidden input for click-to-upload decryption file
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'file';
+        hiddenInput.id = 'hidden-file-input';
+        hiddenInput.style.display = 'none';
+        hiddenInput.onchange = (e) => handleDecFile(e.target.files[0]);
+        document.body.appendChild(hiddenInput);
+
+        // Hidden input for folder encryption (Fallback)
+        const hiddenFolderInput = document.createElement('input');
+        hiddenFolderInput.type = 'file';
+        hiddenFolderInput.id = 'hidden-folder-input';
+        hiddenFolderInput.webkitdirectory = true;
+        hiddenFolderInput.directory = true; // Non-standard fallback
+        hiddenFolderInput.multiple = true;
+        hiddenFolderInput.style.display = 'none';
+        hiddenFolderInput.onchange = (e) => {
+            itemsToProcess = [];
+            const files = e.target.files;
+            if (files.length > 0) {
+                // Get folder name from the first file's path
+                const firstPath = files[0].webkitRelativePath || files[0].name;
+                const folderName = firstPath.split('/')[0] || "Selected_Folder";
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    // Ensure fullPath property exists for our processor
+                    file.fullPath = file.webkitRelativePath || file.name;
+                    itemsToProcess.push(file);
+                }
+                document.getElementById('enc-status').innerText = `${itemsToProcess.length} files queued from "${folderName}".`;
+            }
+        };
+        document.body.appendChild(hiddenFolderInput);
+
+        // Setup Encryption Drop
+        const dropEnc = document.getElementById('drop-zone-encrypt');
+        dropEnc.onclick = async () => {
+            try {
+                // Try modern API first
+                if (window.showDirectoryPicker) {
+                    const handle = await window.showDirectoryPicker();
+                    itemsToProcess = [];
+                    await traverseFileTree(handle, handle.name + "/");
+                    document.getElementById('enc-status').innerText = `${itemsToProcess.length} files queued from folder "${handle.name}".`;
+                } else {
+                    throw new Error("API not supported");
+                }
+            } catch (e) {
+                console.log("Falling back to input:", e);
+                // Fallback to input
+                hiddenFolderInput.click();
+            }
+        };
+
+        // Simple drag support
+        dropEnc.ondragover = e => { e.preventDefault(); dropEnc.classList.add('dragover'); };
+        dropEnc.ondragleave = e => { e.preventDefault(); dropEnc.classList.remove('dragover'); };
+        dropEnc.ondrop = async e => {
+            e.preventDefault(); dropEnc.classList.remove('dragover');
+            itemsToProcess = [];
+            const items = e.dataTransfer.items;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i].webkitGetAsEntry();
+                if (item) await traverseFileTreeWebkit(item);
+            }
+            document.getElementById('enc-status').innerText = `${itemsToProcess.length} files queued.`;
+        };
+
+        // Setup Decryption Drop
+        const dropDec = document.getElementById('drop-zone-decrypt');
+        dropDec.onclick = () => { document.getElementById('hidden-file-input').click(); };
+        dropDec.ondragover = e => { e.preventDefault(); dropDec.classList.add('dragover'); };
+        dropDec.ondragleave = e => { e.preventDefault(); dropDec.classList.remove('dragover'); };
+        dropDec.ondrop = e => {
+            e.preventDefault(); dropDec.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) handleDecFile(e.dataTransfer.files[0]);
+        };
+
+        function handleDecFile(file) {
+            sourceFile = file;
+            document.getElementById('dec-status').innerText = file.name;
+        }
+
+        // --- FILE TRAVERSAL ---
+        // For File System Access API
+        async function traverseFileTree(handle, path = "") {
+            for await (const entry of handle.values()) {
+                if (entry.kind === 'file') {
+                    const file = await entry.getFile();
+                    file.fullPath = path + entry.name;
+                    itemsToProcess.push(file);
+                } else if (entry.kind === 'directory') {
+                    await traverseFileTree(entry, path + entry.name + "/");
+                }
+            }
+        }
+        // For Drag and Drop (Webkit)
+        async function traverseFileTreeWebkit(item, path = "") {
+            if (item.isFile) {
+                const file = await new Promise(r => item.file(r));
+                // Use default path if we dragged a file, or item.fullPath if available
+                file.fullPath = path + item.name;
+                itemsToProcess.push(file);
+            } else if (item.isDirectory) {
+                const dirReader = item.createReader();
+                const entries = await new Promise(r => dirReader.readEntries(r));
+                for (let i = 0; i < entries.length; i++) {
+                    await traverseFileTreeWebkit(entries[i], path + item.name + "/");
+                }
+            }
+        }
+
+        // --- CRYPTO HELPERS ---
+        async function deriveKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
+            return crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
+            );
+        }
+
+        // Encrypt a specific chunk
+        async function encryptChunk(data, key) {
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, data);
+
+            // Format: [IV (12)] [Ciphertext (N)]
+            const res = new Uint8Array(12 + encrypted.byteLength);
+            res.set(iv, 0);
+            res.set(new Uint8Array(encrypted), 12);
+            return res;
+        }
+
+        // Decrypt a specific chunk
+        async function decryptChunk(dataWithIv, key) {
+            const iv = dataWithIv.slice(0, 12);
+            const data = dataWithIv.slice(12);
+            return await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
+        }
+
+        // --- STREAM WRITER WRAPPER ---
+        // Handles switching between Binary and Base64 output automatically
+        class StreamWriter {
+            constructor(writable, format) {
+                this.writable = writable;
+                this.format = format;
+            }
+
+            async write(data) {
+                // data is Uint8Array
+                if (this.format === 'txt') {
+                    // Convert to Base64
+                    let binary = '';
+                    const len = data.byteLength;
+                    for (let i = 0; i < len; i++) {
+                        binary += String.fromCharCode(data[i]);
+                    }
+                    const b64 = btoa(binary);
+                    await this.writable.write(b64 + "\n");
+                } else {
+                    await this.writable.write(data);
+                }
+            }
+
+            async close() {
+                await this.writable.close();
+            }
+        }
+
+        // --- MAIN PROCESS: START ---
+        async function startProcess() {
+            // Compatibility Check
+            if (!window.showSaveFilePicker) {
+                showError("Your browser does not support the required API (File System Access). Please use Chrome/Edge on Desktop.");
+                return;
+            }
+
+            const pw = document.getElementById('password').value;
+            const terms = document.getElementById('terms-check').checked;
+
+            if (!terms) return showError("You must agree to the Terms & Conditions.");
+            if (!pw) return showError("Password is required.");
+
+            document.getElementById('msg-box').style.display = 'none';
+
+            if (currentMode === 'encrypt') await runEncryption(pw);
+            else await runDecryption(pw);
+        }
+
+        // --- ENCRYPTION LOGIC ---
+        async function runEncryption(password) {
+            if (itemsToProcess.length === 0) return showError("No files selected.");
+
+            try {
+                // 1. Ask for Save Location
+                const ext = selectedFormat === 'txt' ? '.txt' : '.vault';
+                const fileHandle = await window.showSaveFilePicker({
+                    suggestedName: `Encrypted_Backup${ext}`,
+                    types: [{ description: 'Stega Vault File', accept: { 'application/octet-stream': [ext] } }]
+                });
+                const writable = await fileHandle.createWritable();
+                const writer = new StreamWriter(writable, selectedFormat);
+
+                toggleProcessing(true);
+                document.getElementById('progress-container').style.display = 'block';
+
+                // 2. Setup Crypto
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const key = await deriveKey(password, salt);
+
+                // 3. Write Header
+                // Header Format: [Magic(12)] [Salt(16)] [Verifier(Approx 30)]
+                const verifier = await encryptChunk(new TextEncoder().encode("VERIFY"), key); // approx 12+6+16 = 34 bytes
+
+                // Combine Header parts
+                const headerLen = MAGIC_HEADER.length + salt.length + 4 + verifier.length;
+                const header = new Uint8Array(headerLen);
+                let offset = 0;
+
+                header.set(MAGIC_HEADER, offset); offset += MAGIC_HEADER.length;
+                header.set(salt, offset); offset += salt.length;
+
+                // Write length of verifier so we know how much to read back
+                new DataView(header.buffer).setUint32(offset, verifier.length); offset += 4;
+                header.set(verifier, offset);
+
+                await writer.write(header);
+
+                // 4. Stream Files
+                let processedBytes = 0;
+                let totalBytes = itemsToProcess.reduce((a, b) => a + b.size, 0);
+
+                for (const file of itemsToProcess) {
+                    if (shouldCancel) break;
+
+                    log(`Encrypting: ${file.fullPath || file.name}`);
+
+                    // A. Write Path Metadata (Type 1)
+                    // Encrypt the path string
+                    const pathData = new TextEncoder().encode(file.fullPath || file.name);
+                    const encPath = await encryptChunk(pathData, key);
+
+                    // Write Marker (1 byte) + Length (4 bytes) + Encrypted Path
+                    const metaHeader = new Uint8Array(5);
+                    metaHeader[0] = MARKER_FILE;
+                    new DataView(metaHeader.buffer).setUint32(1, encPath.length);
+                    await writer.write(metaHeader);
+                    await writer.write(encPath);
+
+                    // B. Stream Content (Type 2)
+                    const stream = file.stream();
+                    const reader = stream.getReader();
+
+                    while (true) {
+                        if (shouldCancel) break;
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        // value is a chunk (variable size, usually 64kb from browser stream)
+                        // Encrypt it
+                        const encChunk = await encryptChunk(value, key);
+
+                        // Write Marker (1 byte) + Length (4 bytes) + Encrypted Chunk
+                        const chunkHeader = new Uint8Array(5);
+                        chunkHeader[0] = MARKER_DATA;
+                        new DataView(chunkHeader.buffer).setUint32(1, encChunk.length);
+
+                        // Optimize: Combine header and payload to write once per chunk
+                        const packet = new Uint8Array(5 + encChunk.length);
+                        packet.set(chunkHeader, 0);
+                        packet.set(encChunk, 5);
+
+                        await writer.write(packet);
+
+                        processedBytes += value.byteLength;
+                        updateProgress(processedBytes, totalBytes);
+                    }
+                }
+
+                // 5. End Marker
+                const endMark = new Uint8Array([MARKER_END]);
+                await writer.write(endMark);
+
+                await writer.close();
+                log("Encryption Complete.");
+
+            } catch (e) {
+                log("Error: " + e.message);
+                showError(e.message);
+            } finally {
+                toggleProcessing(false);
+            }
+        }
+
+        // --- DECRYPTION LOGIC ---
+        async function runDecryption(password) {
+            if (!sourceFile) return showError("No .vault or .txt file selected.");
+
+            try {
+                // 1. Ask for Output Directory (Root)
+                const rootDirHandle = await window.showDirectoryPicker();
+
+                // 2. Create a "Folder Download" wrapper
+                // This ensures we unload as a folder, not just spewing files
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const folderName = `Decrypted_Vault_${timestamp}`;
+                const outputDirHandle = await rootDirHandle.getDirectoryHandle(folderName, { create: true });
+
+                log(`Created output folder: ${folderName}`);
+
+                toggleProcessing(true);
+                document.getElementById('progress-container').style.display = 'block';
+
+                // 3. Prepare Reader
+                const isTxt = sourceFile.name.endsWith('.txt');
+                const streamReader = new AsyncByteReader(sourceFile, isTxt);
+
+                // 4. Read Header
+                // Magic
+                const magic = await streamReader.readBytes(MAGIC_HEADER.length);
+                if (!arraysEqual(magic, MAGIC_HEADER)) throw new Error("Invalid File Format");
+
+                // Salt
+                const salt = await streamReader.readBytes(16);
+                const key = await deriveKey(password, salt);
+
+                // Verifier
+                const verifierLenBytes = await streamReader.readBytes(4);
+                const verifierLen = new DataView(verifierLenBytes.buffer).getUint32(0);
+                const verifierEnc = await streamReader.readBytes(verifierLen);
+
+                try {
+                    const verifyDec = await decryptChunk(verifierEnc, key);
+                    const verifyStr = new TextDecoder().decode(verifyDec);
+                    if (verifyStr !== "VERIFY") throw new Error();
+                    log("Password Correct. Starting Decryption...");
+                } catch (e) {
+                    throw new Error("Incorrect Password.");
+                }
+
+                // 5. Stream Content
+                let currentFileHandle = null;
+                let currentWritable = null;
+                const totalBytes = sourceFile.size; // rough estimate for progress
+
+                while (true) {
+                    if (shouldCancel) break;
+
+                    // Read Marker
+                    const markerByte = await streamReader.readBytes(1);
+                    if (!markerByte) break; // EOF
+                    const marker = markerByte[0];
+
+                    if (marker === MARKER_END) break;
+
+                    // Read Length
+                    const lenBytes = await streamReader.readBytes(4);
+                    const len = new DataView(lenBytes.buffer).getUint32(0);
+
+                    // Read Encrypted Payload
+                    const payload = await streamReader.readBytes(len);
+
+                    if (marker === MARKER_FILE) {
+                        // Metadata: New File Path
+                        if (currentWritable) await currentWritable.close();
+
+                        const decPathBytes = await decryptChunk(payload, key);
+                        const path = new TextDecoder().decode(decPathBytes);
+
+                        log(`Restoring: ${path}`);
+
+                        // Create file recursively inside our output folder
+                        currentFileHandle = await getFileHandleRecursive(outputDirHandle, path);
+                        currentWritable = await currentFileHandle.createWritable();
+
+                    } else if (marker === MARKER_DATA) {
+                        // File Content
+                        if (currentWritable) {
+                            const decChunk = await decryptChunk(payload, key);
+                            await currentWritable.write(decChunk);
+                        }
+                    }
+
+                    updateProgress(streamReader.processedBytes, totalBytes);
+                }
+
+                if (currentWritable) await currentWritable.close();
+                log("Decryption Complete!");
+
+            } catch (e) {
+                log("Error: " + e.message);
+                showError(e.message);
+            } finally {
+                toggleProcessing(false);
+            }
+        }
+
+        // --- HELPER CLASS: Async Byte Reader ---
+        class AsyncByteReader {
+            constructor(file, isBase64) {
+                this.reader = file.stream().getReader();
+                this.isBase64 = isBase64;
+                this.buffer = new Uint8Array(0);
+                this.processedBytes = 0;
+                this.textDecoder = new TextDecoder();
+                this.textBuffer = ""; // For accumulating base64 lines
+            }
+
+            async readBytes(n) {
+                while (this.buffer.length < n) {
+                    const { done, value } = await this.reader.read();
+                    if (done) {
+                        if (this.buffer.length === 0) return null; // EOF
+                        throw new Error("Unexpected EOF");
+                    }
+                    this.processedBytes += value.byteLength;
+
+                    if (this.isBase64) {
+                        this.textBuffer += this.textDecoder.decode(value, { stream: true });
+                        const lines = this.textBuffer.split('\n');
+                        this.textBuffer = lines.pop(); // Keep incomplete line
+
+                        for (const line of lines) {
+                            if (line.trim() === '') continue;
+                            const binStr = atob(line);
+                            const bytes = new Uint8Array(binStr.length);
+                            for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+                            this.appendBuffer(bytes);
+                        }
+                    } else {
+                        this.appendBuffer(value);
+                    }
+                }
+
+                const result = this.buffer.slice(0, n);
+                this.buffer = this.buffer.slice(n);
+                return result;
+            }
+
+            appendBuffer(newData) {
+                const newBuf = new Uint8Array(this.buffer.length + newData.length);
+                newBuf.set(this.buffer);
+                newBuf.set(newData, this.buffer.length);
+                this.buffer = newBuf;
+            }
+        }
+
+        async function getFileHandleRecursive(rootDir, relativePath) {
+            // Remove leading slashes
+            if (relativePath.startsWith('/') || relativePath.startsWith('\\')) relativePath = relativePath.slice(1);
+
+            const parts = relativePath.split(/[/\\]/);
+            let currentDir = rootDir;
+
+            for (let i = 0; i < parts.length - 1; i++) {
+                if (parts[i].trim() === "") continue;
+                currentDir = await currentDir.getDirectoryHandle(parts[i], { create: true });
+            }
+
+            return await currentDir.getFileHandle(parts[parts.length - 1], { create: true });
+        }
+
+        function updateProgress(curr, total) {
+            const pct = Math.min(100, Math.round((curr / total) * 100));
+            document.getElementById('progress-fill').style.width = pct + '%';
+            document.getElementById('progress-text').innerText = pct + '%';
+        }
+
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+            return true;
+        }
+
+        // --- MODAL CONTENT ---
+        const modalContent = {
+            terms: `
+            <h3>Terms & Conditions</h3>
+            <p>By checking the acceptance box and using Stega Suite Vault, you irrevocably agree to the following terms without exception:</p>
+            <ul>
+                <li><strong>Assumption of Risk:</strong> You acknowledge that the use of this software is entirely at your own risk. The software is provided "AS IS" without warranty of any kind.</li>
+                <li><strong>No Liability:</strong> The developers of Stega Suite shall NEVER be held liable for any damages, data loss, financial loss, or legal consequences arising from the use of this tool.</li>
+                <li><strong>Password Responsibility:</strong> You are solely responsible for your password. If you lose your password, your data is permanently lost. There is NO recovery mechanism.</li>
+            </ul>`,
+            privacy: `
+            <h3>Privacy Policy</h3>
+            <p>Stega Suite operates entirely within your web browser using client-side technology.</p>
+            <ul>
+                <li><strong>No Server Storage:</strong> We do not store, log, or transmit your passwords or files to any server.</li>
+                <li><strong>Local Processing:</strong> All encryption and decryption happens locally on your device's processor and storage.</li>
+                <li><strong>No Cookies:</strong> We do not use tracking cookies.</li>
+            </ul>`
+        };
+
+        function openModal(type) {
+            document.getElementById('modal-title').innerText = type === 'terms' ? 'Terms & Conditions' : 'Privacy Policy';
+            document.getElementById('modal-body').innerHTML = modalContent[type];
+            document.getElementById('modal-overlay').classList.add('open');
+        }
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('open');
+        }
+        document.getElementById('modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modal-overlay') closeModal();
+        });
+
+    </script>
+</body>
+
+</html>

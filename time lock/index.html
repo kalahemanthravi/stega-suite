@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHRONOS | Time-Lock Encryption</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Chronos Lock</h1>
+            <div class="subtitle">MILITARY-GRADE TIMELOCK ENCRYPTION PROTOCOL</div>
+        </header>
+
+        <div class="card">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('encrypt')">Encrypt</button>
+                <button class="tab-btn" onclick="switchTab('decrypt')">Decrypt</button>
+            </div>
+
+            <div id="encrypt-panel" class="panel active">
+                <div class="form-group">
+                    <label>SOURCE FILE</label>
+                    <input type="file" id="enc-file">
+                </div>
+
+                <div class="form-group">
+                    <label>PASSPHRASE</label>
+                    <input type="password" id="enc-password" placeholder="Enter secure passphrase">
+                </div>
+
+                <div class="form-group">
+                    <label>UNLOCK DATE (UTC/Local)</label>
+                    <input type="datetime-local" id="enc-date">
+                    <span class="info-text">File cannot be opened before this time by ANY means.</span>
+                </div>
+
+                <button class="btn" id="btn-encrypt">INITIATE LOCK</button>
+
+                <div class="status-box" id="enc-status">Waiting for input...</div>
+                <div id="enc-download-area"></div>
+            </div>
+
+            <div id="decrypt-panel" class="panel">
+                <div class="form-group">
+                    <label>LOCKED ARTIFACT (.chronos)</label>
+                    <input type="file" id="dec-file" accept=".chronos,.json">
+                </div>
+
+                <div class="form-group">
+                    <label>PASSPHRASE</label>
+                    <input type="password" id="dec-password" placeholder="Enter original passphrase">
+                </div>
+
+                <button class="btn" id="btn-decrypt">ATTEMPT UNLOCK</button>
+
+                <div class="status-box" id="dec-status">System Standby</div>
+                <div id="dec-download-area"></div>
+            </div>
+            <div class="info-panel"
+                style="margin-top: 2rem; padding: 1.5rem; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.9rem; color: #a0aec0;">
+                <h3 style="color: #64ffda; margin-bottom: 0.5rem; font-size: 1rem;">How to Use Time Lock</h3>
+                <p style="margin-bottom: 1rem; line-height: 1.5;">
+                    This tool creates a "digital time capsule". You can encrypt a file so that it is mathematically
+                    impossible to open until a specific date and time in the future, even with the password.
+                </p>
+                <ul style="padding-left: 1.2rem; list-style: disc;">
+                    <li style="margin-bottom: 0.5rem;"><strong>Encrypt:</strong> Upload a file, set a password, and
+                        choose an "Unlock Date". The file will be locked until that moment.</li>
+                    <li><strong>Decrypt:</strong> Upload the locked file (.chronos) and enter the password. If the
+                        unlock time hasn't passed, the system will prevent access.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js" type="module"></script>
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+
+            const idx = tab === 'encrypt' ? 0 : 1;
+            document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+            document.getElementById(tab + '-panel').classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

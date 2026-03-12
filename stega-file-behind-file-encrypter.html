@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stega Suite | Secure Drive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                        mono: ['"Fira Code"', 'monospace'], // Only for technical data
+                    },
+                    colors: {
+                        brand: {
+                            bg: '#09090b',       // Zinc 950
+                            card: '#18181b',     // Zinc 900
+                            border: '#27272a',   // Zinc 800
+                            input: '#27272a',
+                            primary: '#6366f1',  // Indigo 500
+                            primaryHover: '#4f46e5',
+                            text: '#f4f4f5',     // Zinc 100
+                            muted: '#a1a1aa',    // Zinc 400
+                            success: '#10b981',  // Emerald 500
+                            error: '#ef4444',    // Red 500
+                            warning: '#f59e0b',  // Amber 500
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #09090b;
+            color: #f4f4f5;
+            /* Subtle ambient background */
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 25%);
+        }
+
+        /* Glassmorphism utility */
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Modern Input Styling */
+        .modern-input {
+            background: rgba(39, 39, 42, 0.5);
+            border: 1px solid #27272a;
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .modern-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed #27272a;
+            background: rgba(24, 24, 27, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .drop-zone:hover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+
+        /* Checkbox */
+        .modern-checkbox {
+            appearance: none;
+            background-color: #27272a;
+            border: 1px solid #3f3f46;
+            width: 1.15rem;
+            height: 1.15rem;
+            border-radius: 4px;
+            display: grid;
+            place-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modern-checkbox:checked {
+            background-color: #6366f1;
+            border-color: #6366f1;
+        }
+
+        .modern-checkbox:checked::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: white;
+            font-size: 0.7rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2), 0 2px 4px -1px rgba(99, 102, 241, 0.1);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        .tab-btn {
+            position: relative;
+            color: #a1a1aa;
+            transition: color 0.2s;
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: #27272a;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #6366f1;
+        }
+
+        .log-entry {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            padding: 2px 0;
+            border-left: 2px solid transparent;
+            padding-left: 8px;
+            margin-bottom: 4px;
+        }
+
+        .log-info {
+            color: #a1a1aa;
+            border-left-color: #3f3f46;
+        }
+
+        .log-success {
+            color: #34d399;
+            border-left-color: #059669;
+        }
+
+        .log-error {
+            color: #f87171;
+            border-left-color: #dc2626;
+        }
+
+        .log-warning {
+            color: #fbbf24;
+            border-left-color: #d97706;
+        }
+
+        /* Loader */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col font-sans selection:bg-brand-primary selection:text-white">
+
+    <!-- Header -->
+    <header class="border-b border-brand-border sticky top-0 z-50 glass-panel">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-primary to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <i class="fas fa-layer-group text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">Stega<span
+                            class="text-indigo-400">Suite</span></h1>
+                    <p class="text-[10px] text-brand-muted uppercase tracking-wider font-semibold">Secure Carrier System
+                    </p>
+                </div>
+            </div>
+            <button onclick="toggleModal('policyModal')"
+                class="text-sm text-brand-muted hover:text-white transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-brand-border">
+                <i class="fas fa-shield-halved"></i> <span>Legal & Terms</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Info Banner -->
+    <div class="max-w-6xl mx-auto px-6 mt-6">
+        <div class="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl flex items-start gap-3">
+            <i class="fas fa-circle-info text-indigo-400 mt-0.5"></i>
+            <div class="text-sm">
+                <p class="text-indigo-100 font-medium">Standard Capacity Mode</p>
+                <p class="text-brand-muted mt-1">
+                    This tool allows <strong>any file type</strong> (Video, Audio, etc.) as a carrier and supports
+                    <strong>Large Files</strong>.
+                    <br>
+                    <span class="text-yellow-500 font-medium"><i class="fas fa-triangle-exclamation mr-1"></i>
+                        Note:</span>
+                    Files created here <strong>CAN be detected</strong> by our website's <a href="#"
+                        onclick="parent.loadTool(this, 'Steganography-Detector.html')"
+                        class="underline hover:text-white">Steganography Detector</a>.
+                    <br>
+                    Need undetectable stealth for images? Use the <a href="#"
+                        onclick="parent.loadTool(this, 'steganography file behind file-high.html')"
+                        class="underline hover:text-white">High Security Tool</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-6 flex items-center justify-center relative">
+        <!-- Abstract Background blobs -->
+        <div class="absolute top-20 left-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-20 right-20 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none">
+        </div>
+
+        <div class="w-full max-w-4xl glass-panel rounded-2xl shadow-2xl overflow-hidden animate-fade-in z-10">
+
+            <!-- Tabs -->
+            <div class="flex border-b border-brand-border bg-brand-bg/50">
+                <button onclick="switchTab('embed')" id="tab-embed"
+                    class="tab-btn active flex-1 py-4 text-sm font-medium tracking-wide transition-all flex items-center justify-center gap-2 hover:bg-white/5">
+                    <i class="fas fa-lock"></i> ENCRYPT & HIDE
+                </button>
+                <button onclick="switchTab('extract')" id="tab-extract"
+                    class="tab-btn flex-1 py-4 text-sm font-medium tracking-wide transition-all flex items-center justify-center gap-2 hover:bg-white/5">
+                    <i class="fas fa-key"></i> EXTRACT & DECRYPT
+                </button>
+            </div>
+
+            <!-- EMBED SECTION -->
+            <div id="section-embed" class="p-8 space-y-8">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Carrier Input -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-semibold text-brand-muted uppercase tracking-wider ml-1">1.
+                            Carrier File (Cover)</label>
+                        <div class="relative group cursor-pointer h-48">
+                            <input type="file" id="carrierInput" accept="image/*,video/*"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                onchange="handleFileSelect(this, 'carrier-preview')">
+                            <div
+                                class="drop-zone rounded-xl h-full flex flex-col items-center justify-center text-center p-6">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-brand-border flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                    <i
+                                        class="fas fa-image text-xl text-brand-muted group-hover:text-indigo-400 transition-colors"></i>
+                                </div>
+                                <span id="carrier-preview-text" class="text-sm font-medium text-brand-text">Select Image
+                                    or Video</span>
+                                <span class="text-xs text-brand-muted mt-1">This file will remain visible</span>
+                                <div id="carrier-preview-info"
+                                    class="mt-3 text-xs bg-brand-bg px-2 py-1 rounded border border-brand-border text-indigo-400 hidden font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secret Input -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-semibold text-brand-muted uppercase tracking-wider ml-1">2.
+                            Secret File (Data)</label>
+                        <div class="relative group cursor-pointer h-48">
+                            <input type="file" id="secretInput"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                onchange="handleFileSelect(this, 'secret-preview')">
+                            <div
+                                class="drop-zone rounded-xl h-full flex flex-col items-center justify-center text-center p-6">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-brand-border flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                    <i
+                                        class="fas fa-file-shield text-xl text-brand-muted group-hover:text-indigo-400 transition-colors"></i>
+                                </div>
+                                <span id="secret-preview-text" class="text-sm font-medium text-brand-text">Select Secret
+                                    File</span>
+                                <span class="text-xs text-brand-muted mt-1">Any format (PDF, ZIP, DOCX)</span>
+                                <div id="secret-preview-info"
+                                    class="mt-3 text-xs bg-brand-bg px-2 py-1 rounded border border-brand-border text-indigo-400 hidden font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Encryption Controls -->
+                <div class="bg-brand-card/50 p-6 rounded-xl border border-brand-border space-y-5">
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold text-brand-muted uppercase tracking-wider">3.
+                            Encryption Password</label>
+                        <div class="relative">
+                            <i class="fas fa-lock absolute left-4 top-3.5 text-brand-muted"></i>
+                            <input type="password" id="embedPassword" placeholder="Enter a strong passphrase..."
+                                class="modern-input w-full pl-10 pr-4 py-3 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Terms Checkbox -->
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" id="embedTerms" class="modern-checkbox mt-0.5"
+                            onchange="toggleBtn('embedTerms', 'embedBtn')">
+                        <label for="embedTerms"
+                            class="text-xs text-brand-muted leading-relaxed cursor-pointer select-none">
+                            I understand that if I lose this password, <span class="text-brand-text font-medium">data is
+                                irretrievable</span>. I agree to the <span
+                                class="text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                                onclick="toggleModal('policyModal'); event.preventDefault();">Terms of Service</span>.
+                        </label>
+                    </div>
+
+                    <!-- Action Area -->
+                    <div class="space-y-4">
+                        <button onclick="processEmbed()" id="embedBtn"
+                            class="btn-primary w-full py-3.5 rounded-lg font-medium text-white shadow-lg btn-disabled flex items-center justify-center gap-2">
+                            <span>Encrypt & Download</span> <i class="fas fa-arrow-right text-xs"></i>
+                        </button>
+
+                        <!-- Progress Bar -->
+                        <div id="embedProgressContainer" class="hidden">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-brand-muted">Processing...</span>
+                                <span id="embedStatus" class="text-indigo-400 font-mono">0%</span>
+                            </div>
+                            <div class="w-full bg-brand-border rounded-full h-1.5 overflow-hidden">
+                                <div id="embedProgressBar"
+                                    class="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Download Area -->
+                        <div id="embedDownloadArea"
+                            class="hidden text-center bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 animate-fade-in">
+                            <div class="flex flex-col items-center gap-2">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <p class="text-sm text-emerald-100 font-medium">Encryption Successful</p>
+                                <a id="embedDownloadLink" href="#"
+                                    class="mt-2 text-xs bg-brand-card hover:bg-brand-border text-white border border-brand-border px-4 py-2 rounded-md transition-colors inline-flex items-center gap-2">
+                                    <i class="fas fa-download"></i> Save File
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXTRACT SECTION -->
+            <div id="section-extract" class="p-8 space-y-8 hidden">
+                <div class="max-w-xl mx-auto space-y-8">
+                    <div class="space-y-3">
+                        <label
+                            class="block text-xs font-semibold text-brand-muted uppercase tracking-wider text-center">Upload
+                            Encrypted Carrier</label>
+                        <div class="relative group cursor-pointer">
+                            <input type="file" id="stegaInput"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                onchange="handleFileSelect(this, 'stega-preview')">
+                            <div
+                                class="drop-zone rounded-xl p-10 text-center flex flex-col items-center justify-center">
+                                <div
+                                    class="w-16 h-16 rounded-full bg-brand-border flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-inner">
+                                    <i
+                                        class="fas fa-unlock-keyhole text-2xl text-brand-muted group-hover:text-indigo-400 transition-colors"></i>
+                                </div>
+                                <span id="stega-preview-text" class="text-base font-medium text-brand-text">Drop File to
+                                    Decrypt</span>
+                                <div id="stega-preview-info"
+                                    class="mt-3 text-xs bg-brand-bg px-2 py-1 rounded border border-brand-border text-indigo-400 hidden font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-brand-card/50 p-6 rounded-xl border border-brand-border space-y-5">
+                        <div class="space-y-2">
+                            <label
+                                class="block text-xs font-semibold text-brand-muted uppercase tracking-wider">Decryption
+                                Password</label>
+                            <div class="relative">
+                                <i class="fas fa-key absolute left-4 top-3.5 text-brand-muted"></i>
+                                <input type="password" id="extractPassword" placeholder="Enter password to unlock..."
+                                    class="modern-input w-full pl-10 pr-4 py-3 rounded-lg text-sm">
+                            </div>
+                        </div>
+
+                        <!-- Terms Checkbox -->
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" id="extractTerms" class="modern-checkbox mt-0.5"
+                                onchange="toggleBtn('extractTerms', 'extractBtn')">
+                            <label for="extractTerms"
+                                class="text-xs text-brand-muted leading-relaxed cursor-pointer select-none">
+                                I confirm I have the legal right to access this content and agree to the <span
+                                    class="text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                                    onclick="toggleModal('policyModal'); event.preventDefault();">Terms</span>.
+                            </label>
+                        </div>
+
+                        <div class="space-y-4">
+                            <button onclick="processExtract()" id="extractBtn"
+                                class="btn-primary w-full py-3.5 rounded-lg font-medium text-white shadow-lg btn-disabled flex items-center justify-center gap-2">
+                                <span>Unlock & Restore</span> <i class="fas fa-folder-open text-xs"></i>
+                            </button>
+
+                            <!-- Progress Bar -->
+                            <div id="extractProgressContainer" class="hidden">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-brand-muted">Decrypting...</span>
+                                    <span id="extractStatus" class="text-indigo-400 font-mono">0%</span>
+                                </div>
+                                <div class="w-full bg-brand-border rounded-full h-1.5 overflow-hidden">
+                                    <div id="extractProgressBar"
+                                        class="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                                        style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Download Area -->
+                            <div id="extractDownloadArea"
+                                class="hidden text-center bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4 animate-fade-in">
+                                <div class="flex flex-col items-center gap-2">
+                                    <div
+                                        class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                        <i class="fas fa-file-export"></i>
+                                    </div>
+                                    <p class="text-sm text-indigo-100 font-medium">File Restored Successfully</p>
+                                    <a id="extractDownloadLink" href="#"
+                                        class="mt-2 text-xs bg-brand-card hover:bg-brand-border text-white border border-brand-border px-4 py-2 rounded-md transition-colors inline-flex items-center gap-2">
+                                        <i class="fas fa-download"></i> Download Secret
+                                    </a>
+                                    <div
+                                        class="flex items-center gap-2 mt-2 px-3 py-1.5 bg-yellow-500/10 rounded text-[10px] text-yellow-200 border border-yellow-500/20">
+                                        <i class="fas fa-triangle-exclamation"></i>
+                                        <span>Security Warning: Verify file source before executing.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Console (Miniaturized) -->
+            <div class="bg-black/40 p-3 border-t border-brand-border h-32 overflow-y-auto" id="console-output">
+                <div class="log-entry log-info">> System Initialized. Secure environment ready.</div>
+            </div>
+        </div>
+
+        <div class="absolute bottom-4 text-center w-full text-[10px] text-brand-muted/50 font-mono">
+            Client-Side AES-256-GCM • Zero-Knowledge Architecture
+        </div>
+
+        <!-- Instructions -->
+        <div
+            class="relative z-10 w-full max-w-4xl mx-auto mt-12 mb-20 glass-panel rounded-xl p-8 animate-fade-in text-brand-text">
+            <div class="flex items-center gap-3 mb-4 text-indigo-400">
+                <i class="fas fa-book text-xl"></i>
+                <h2 class="text-xl font-bold">User Guide</h2>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8 text-sm text-brand-muted leading-relaxed">
+                <div>
+                    <h3 class="text-white font-semibold mb-2">What is this tool?</h3>
+                    <p class="mb-3">
+                        This is a <strong>File Binding Tool</strong>. It allows you to take a "Secret File" (any format)
+                        and attach it to a "Carrier File" (Image or Video).
+                    </p>
+                    <p>
+                        The resulting file will look and play exactly like the original Carrier File, but it contains
+                        your encrypted secret file hidden inside it. This functionality is often called "Append
+                        Steganography".
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold mb-2">How to use</h3>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li><strong>Encrypt:</strong> Upload a Carrier (e.g., a photo) and a Secret File (e.g., a PDF).
+                            Set a password and download the result.</li>
+                        <li><strong>Decrypt:</strong> Go to the "Extract" tab. Upload the secured file you created
+                            previously. Enter the password to retrieve your secret file.</li>
+                    </ol>
+                    <p class="mt-3 text-xs text-yellow-500">
+                        <i class="fas fa-star"></i> Pro Tip: Use this for hiding large archives or files that wouldn't
+                        fit in standard pixel-based steganography.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Terms Modal -->
+    <div id="policyModal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-brand-card max-w-xl w-full rounded-2xl border border-brand-border shadow-2xl flex flex-col max-h-[85vh] animate-fade-in">
+            <div
+                class="p-5 border-b border-brand-border flex justify-between items-center bg-brand-bg/50 rounded-t-2xl">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-scale-balanced text-indigo-400"></i> Legal & Terms
+                </h2>
+                <button onclick="toggleModal('policyModal')"
+                    class="text-brand-muted hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-brand-border"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto text-brand-muted space-y-6 text-sm leading-relaxed">
+                <div
+                    class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-xs font-medium flex gap-2">
+                    <i class="fas fa-circle-exclamation mt-0.5"></i>
+                    <p>CRITICAL NOTICE: This tool operates offline. We cannot recover lost passwords or corrupted files.
+                    </p>
+                </div>
+
+                <section>
+                    <h3 class="text-white font-medium mb-2 text-xs uppercase tracking-wider">1. Disclaimer of Liability
+                    </h3>
+                    <p>The "Stega Suite" software is provided "AS IS", without warranty of any kind. The authors
+                        disclaim all liability for data loss, file corruption, or legal consequences resulting from use.
+                    </p>
+                </section>
+                <section>
+                    <h3 class="text-white font-medium mb-2 text-xs uppercase tracking-wider">2. User Responsibility</h3>
+                    <ul class="list-disc ml-4 space-y-1 marker:text-indigo-500">
+                        <li>You must backup original data before processing.</li>
+                        <li>You are solely responsible for password management.</li>
+                        <li>You must ensure compliance with local encryption laws.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3 class="text-white font-medium mb-2 text-xs uppercase tracking-wider">3. Prohibited Use</h3>
+                    <p>Do not use this tool for concealing malware, illegal content, or infringing intellectual
+                        property. The user bears full legal responsibility for encrypted payloads.</p>
+                </section>
+            </div>
+            <div class="p-4 border-t border-brand-border bg-brand-bg/50 rounded-b-2xl flex justify-end">
+                <button onclick="toggleModal('policyModal')"
+                    class="bg-brand-border hover:bg-indigo-600 text-white font-medium px-5 py-2 rounded-lg transition-colors text-xs">I
+                    Understand</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script>
+        // --- CONFIGURATION ---
+        const MAGIC_SIGNATURE = new TextEncoder().encode("STEGA_DRIVE_V1");
+
+        // --- UI FUNCTIONS ---
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
+
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`section-${tab}`).classList.remove('hidden');
+            log(`> Switched to ${tab.toUpperCase()} workspace.`, 'info');
+        }
+
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.toggle('hidden');
+        }
+
+        function toggleBtn(checkId, btnId) {
+            const chk = document.getElementById(checkId);
+            const btn = document.getElementById(btnId);
+            if (chk.checked) {
+                btn.classList.remove('btn-disabled');
+            } else {
+                btn.classList.add('btn-disabled');
+            }
+        }
+
+        function log(msg, type = 'info') {
+            const consoleEl = document.getElementById('console-output');
+            const div = document.createElement('div');
+            div.className = `log-entry log-${type}`;
+            div.innerText = msg;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function handleFileSelect(input, previewId) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const textEl = document.getElementById(`${previewId}-text`);
+            const infoEl = document.getElementById(`${previewId}-info`);
+
+            textEl.innerText = file.name;
+            textEl.classList.add('text-indigo-300');
+            infoEl.innerText = `${(file.size / 1024 / 1024).toFixed(2)} MB | ${file.type || 'Unknown'}`;
+            infoEl.classList.remove('hidden');
+
+            if (file.size > 500 * 1024 * 1024) {
+                log(`> WARNING: Large file detected (${(file.size / 1024 / 1024).toFixed(0)}MB). Processing may take time.`, 'warning');
+            } else {
+                log(`> File loaded: ${file.name}`, 'info');
+            }
+        }
+
+        function updateProgress(id, percent, message) {
+            const bar = document.getElementById(id + 'ProgressBar');
+            const container = document.getElementById(id + 'ProgressContainer');
+            const status = document.getElementById(id + 'Status');
+
+            container.classList.remove('hidden');
+            bar.style.width = percent + '%';
+            if (message) status.innerText = message;
+        }
+
+        // --- HELPER: CHUNKED READER ---
+        function readFileWithProgress(file, sectionId) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = ((e.loaded / e.total) * 40).toFixed(0);
+                        updateProgress(sectionId, percent, `${percent}% (Read)`);
+                    }
+                };
+
+                reader.onload = (e) => {
+                    updateProgress(sectionId, 45, '45% (Buffer)');
+                    setTimeout(() => resolve(e.target.result), 50);
+                };
+
+                reader.onerror = () => reject(new Error("File read error"));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // --- CRYPTO CORE ---
+
+        async function generateKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw",
+                enc.encode(password),
+                { name: "PBKDF2" },
+                false,
+                ["deriveKey"]
+            );
+
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        // --- EMBED PROCESS ---
+
+        async function processEmbed() {
+            const carrierInput = document.getElementById('carrierInput');
+            const secretInput = document.getElementById('secretInput');
+            const password = document.getElementById('embedPassword').value;
+            const btn = document.getElementById('embedBtn');
+            const downloadArea = document.getElementById('embedDownloadArea');
+
+            downloadArea.classList.add('hidden');
+            updateProgress('embed', 0, '0%');
+
+            if (!carrierInput.files[0] || !secretInput.files[0] || !password) {
+                log('> Error: Missing files or password.', 'error');
+                return;
+            }
+
+            const secretFile = secretInput.files[0];
+
+            // SECURITY CHECK
+            const blockedExtensions = ['.exe', '.bat', '.sh', '.msi', '.vbs', '.cmd', '.com', '.scr', '.apk', '.jar', '.js', '.py'];
+            const fileExt = secretFile.name.substring(secretFile.name.lastIndexOf('.')).toLowerCase();
+
+            if (blockedExtensions.includes(fileExt)) {
+                log('> SECURITY ALERT: Executable/Script files blocked.', 'error');
+                updateProgress('embed', 0, 'Blocked');
+                return;
+            }
+
+            try {
+                btn.innerHTML = '<div class="spinner"></div>';
+                btn.classList.add('btn-disabled');
+
+                const carrierFile = carrierInput.files[0];
+
+                log('> Initiating memory buffer...', 'info');
+
+                // 1. Read files
+                updateProgress('embed', 10, '10% (Reading)');
+                const carrierBuffer = await readFileWithProgress(carrierFile, 'embed');
+                const secretBuffer = await readFileWithProgress(secretFile, 'embed');
+
+                // 2. Crypto Setup
+                updateProgress('embed', 60, '60% (Deriving Keys)');
+                await new Promise(r => setTimeout(r, 50));
+
+                const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                const key = await generateKey(password, salt);
+
+                // 3. Encrypt
+                updateProgress('embed', 75, '75% (Encrypting)');
+                await new Promise(r => setTimeout(r, 50));
+
+                const encryptedContent = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    secretBuffer
+                );
+
+                // 4. Construct Blob
+                updateProgress('embed', 90, '90% (Packaging)');
+
+                const metadata = JSON.stringify({
+                    name: secretFile.name,
+                    type: secretFile.type,
+                    size: secretFile.size,
+                    timestamp: new Date().toISOString()
+                });
+                const metadataBytes = new TextEncoder().encode(metadata);
+
+                const encLenBuf = new ArrayBuffer(4);
+                new DataView(encLenBuf).setUint32(0, encryptedContent.byteLength, true);
+
+                const metaLenBuf = new ArrayBuffer(4);
+                new DataView(metaLenBuf).setUint32(0, metadataBytes.byteLength, true);
+
+                const finalBlobParts = [
+                    carrierBuffer,
+                    salt,
+                    iv,
+                    encryptedContent,
+                    metadataBytes,
+                    encLenBuf,
+                    metaLenBuf,
+                    MAGIC_SIGNATURE
+                ];
+
+                const finalBlob = new Blob(finalBlobParts, { type: carrierFile.type });
+                const url = URL.createObjectURL(finalBlob);
+
+                const extension = carrierFile.name.split('.').pop();
+                const nameWithoutExt = carrierFile.name.substring(0, carrierFile.name.lastIndexOf('.'));
+                const dlLink = document.getElementById('embedDownloadLink');
+
+                dlLink.href = url;
+                dlLink.download = `${nameWithoutExt}_secure.${extension}`;
+                dlLink.onclick = () => { log('> User downloaded file.', 'success'); };
+
+                updateProgress('embed', 100, 'Complete');
+                downloadArea.classList.remove('hidden');
+
+                log('> Encryption Complete.', 'success');
+
+            } catch (e) {
+                console.error(e);
+                log(`> Error: ${e.message}`, 'error');
+                updateProgress('embed', 0, 'Error');
+            } finally {
+                btn.innerHTML = '<span>Encrypt & Download</span> <i class="fas fa-arrow-right text-xs"></i>';
+                if (document.getElementById('embedTerms').checked) {
+                    btn.classList.remove('btn-disabled');
+                }
+            }
+        }
+
+        // --- EXTRACT PROCESS ---
+
+        async function processExtract() {
+            const stegaInput = document.getElementById('stegaInput');
+            const password = document.getElementById('extractPassword').value;
+            const btn = document.getElementById('extractBtn');
+            const downloadArea = document.getElementById('extractDownloadArea');
+
+            downloadArea.classList.add('hidden');
+            updateProgress('extract', 0, '0%');
+
+            if (!stegaInput.files[0] || !password) {
+                log('> Error: Missing file or password.', 'error');
+                return;
+            }
+
+            try {
+                btn.innerHTML = '<div class="spinner"></div>';
+                btn.classList.add('btn-disabled');
+
+                const file = stegaInput.files[0];
+
+                // 1. Read File
+                log('> Scanning file structure...', 'info');
+                const fileBuffer = await readFileWithProgress(file, 'extract');
+                const dataView = new DataView(fileBuffer);
+                const totalLen = fileBuffer.byteLength;
+
+                updateProgress('extract', 60, '60% (Validating)');
+                await new Promise(r => setTimeout(r, 50));
+
+                // 2. Validate Signature
+                const sigLen = MAGIC_SIGNATURE.length;
+                const fileSig = new Uint8Array(fileBuffer, totalLen - sigLen, sigLen);
+
+                let isMatch = true;
+                for (let i = 0; i < sigLen; i++) {
+                    if (fileSig[i] !== MAGIC_SIGNATURE[i]) isMatch = false;
+                }
+
+                if (!isMatch) throw new Error("Invalid or Modified Carrier File.");
+
+                // 3. Parse Footer
+                const footerOffset = totalLen - sigLen;
+                const metaLenVal = dataView.getUint32(footerOffset - 4, true);
+                const encLenVal = dataView.getUint32(footerOffset - 8, true);
+                const initialMetaStart = footerOffset - 8 - metaLenVal;
+
+                // 4. Recover Metadata
+                let metaObj;
+                let actualMetaStart = initialMetaStart;
+
+                try {
+                    const metaBytes = new Uint8Array(fileBuffer, initialMetaStart, metaLenVal);
+                    metaObj = JSON.parse(new TextDecoder().decode(metaBytes));
+                } catch (e) {
+                    log('> Warning: Header mismatch. Attempting soft recovery...', 'warning');
+                    actualMetaStart = initialMetaStart - 4;
+                    const metaBytes = new Uint8Array(fileBuffer, actualMetaStart, metaLenVal);
+                    metaObj = JSON.parse(new TextDecoder().decode(metaBytes));
+                }
+
+                // 5. Extract Encryption Parts
+                let calculatedEncLen = encLenVal;
+                if (actualMetaStart !== initialMetaStart) {
+                    calculatedEncLen = metaObj.size + 16;
+                }
+
+                const encryptedStart = actualMetaStart - calculatedEncLen;
+                const ivStart = encryptedStart - 12;
+                const saltStart = ivStart - 16;
+
+                if (saltStart < 0) throw new Error("File corruption detected.");
+
+                const salt = new Uint8Array(fileBuffer, saltStart, 16);
+                const iv = new Uint8Array(fileBuffer, ivStart, 12);
+                const encryptedData = new Uint8Array(fileBuffer, encryptedStart, calculatedEncLen);
+
+                // 6. Decrypt
+                updateProgress('extract', 80, '80% (Decrypting)');
+                await new Promise(r => setTimeout(r, 50));
+
+                const key = await generateKey(password, salt);
+                const decryptedBuffer = await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    encryptedData
+                );
+
+                // 7. Setup Download
+                const blob = new Blob([decryptedBuffer], { type: metaObj.type });
+                const url = URL.createObjectURL(blob);
+                const dlLink = document.getElementById('extractDownloadLink');
+
+                dlLink.href = url;
+                dlLink.download = "UNLOCKED_" + metaObj.name;
+                dlLink.onclick = () => { log('> User downloaded secret.', 'success'); };
+
+                updateProgress('extract', 100, 'Success');
+                downloadArea.classList.remove('hidden');
+                log('> Decryption successful.', 'success');
+
+            } catch (e) {
+                console.error(e);
+                if (e.name === 'OperationError') {
+                    log('> FAILED: Incorrect Password.', 'error');
+                } else {
+                    log(`> Error: ${e.message}`, 'error');
+                }
+                updateProgress('extract', 0, 'Failed');
+            } finally {
+                btn.innerHTML = '<span>Unlock & Restore</span> <i class="fas fa-folder-open text-xs"></i>';
+                if (document.getElementById('extractTerms').checked) {
+                    btn.classList.remove('btn-disabled');
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

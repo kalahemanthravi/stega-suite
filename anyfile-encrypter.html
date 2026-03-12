@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stega Suite | Client-Side Encryption</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#1a202c',
+                            900: '#0f172a',
+                            950: '#020617',
+                        },
+                        emerald: {
+                            450: '#10b981',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"Courier New"', 'Courier', 'monospace'],
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .tab-btn.active {
+            background-color: #10b981;
+            color: #020617;
+            border-color: #10b981;
+            font-weight: 700;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #10b981;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-between p-4 selection:bg-emerald-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="w-full max-w-4xl flex justify-between items-center py-6 mb-4">
+        <div class="flex items-center gap-3">
+            <div
+                class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-slate-900 text-xl shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white">Stega<span
+                        class="text-emerald-400">Suite</span></h1>
+                <p class="text-xs text-slate-400 font-mono tracking-wider">AES-GCM // PREVIEW ENGINE</p>
+            </div>
+        </div>
+        <button onclick="document.getElementById('policies-modal').classList.remove('hidden')"
+            class="text-slate-400 hover:text-white transition-colors text-sm font-medium">
+            <i class="fa-solid fa-file-contract mr-1"></i> Terms & Conditions
+        </button>
+    </header>
+
+    <!-- Main Application -->
+    <main class="w-full max-w-lg relative">
+
+        <!-- Navigation Tabs -->
+        <div class="flex rounded-xl bg-slate-800/50 p-1 mb-6 border border-slate-700/50">
+            <button id="tab-encrypt" onclick="switchTab('encrypt')"
+                class="tab-btn active flex-1 py-2.5 rounded-lg text-sm transition-all duration-200 border border-transparent">
+                <i class="fa-solid fa-lock mr-2"></i> Encrypt
+            </button>
+            <button id="tab-decrypt" onclick="switchTab('decrypt')"
+                class="tab-btn flex-1 py-2.5 rounded-lg text-slate-400 text-sm hover:text-slate-200 transition-all duration-200 border border-transparent">
+                <i class="fa-solid fa-unlock-keyhole mr-2"></i> Decrypt
+            </button>
+        </div>
+
+        <!-- Encrypt Panel -->
+        <div id="panel-encrypt" class="glass-panel rounded-2xl p-6 md:p-8 space-y-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                <i class="fa-solid fa-fingerprint text-9xl text-emerald-500"></i>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-slate-300">1. Select File to Protect</label>
+                <div class="relative group">
+                    <input type="file" id="enc-file" class="hidden"
+                        onchange="updateFileName('enc-file', 'enc-filename')">
+                    <label for="enc-file"
+                        class="flex items-center justify-center w-full h-24 px-4 transition bg-slate-800/50 border-2 border-slate-700 border-dashed rounded-xl appearance-none cursor-pointer hover:border-emerald-500/50 hover:bg-slate-800 focus:outline-none">
+                        <div class="flex flex-col items-center space-y-2 text-center">
+                            <i
+                                class="fa-solid fa-cloud-arrow-up text-xl text-slate-400 group-hover:text-emerald-400 transition-colors"></i>
+                            <span class="font-medium text-slate-400 group-hover:text-slate-200 text-xs"><span
+                                    class="text-emerald-400">Upload</span> Large files supported</span>
+                            <span id="enc-filename" class="text-xs text-slate-500 max-w-[200px] truncate">Any
+                                format</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-slate-300">2. Set Password</label>
+                <div class="relative">
+                    <input type="password" id="enc-password" placeholder="Strong password"
+                        class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder-slate-600 text-sm">
+                    <i class="fa-solid fa-key absolute right-4 top-3.5 text-slate-600 text-xs"></i>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-slate-300">3. Output Format</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="format" value="binary" checked class="peer sr-only">
+                        <div
+                            class="p-2 rounded-lg border border-slate-700 bg-slate-900/30 text-center peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 transition-all">
+                            <div class="font-bold text-white text-xs">.ENC</div>
+                            <div class="text-[10px] text-slate-400">Binary (Best)</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="format" value="text" class="peer sr-only">
+                        <div
+                            class="p-2 rounded-lg border border-slate-700 bg-slate-900/30 text-center peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 transition-all">
+                            <div class="font-bold text-white text-xs">.TXT</div>
+                            <div class="text-[10px] text-slate-400">Base64 Text</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-slate-900/30 border border-slate-700/50">
+                <div class="flex h-6 items-center">
+                    <input id="chk-agree" type="checkbox" onchange="toggleEncryptButton()"
+                        class="h-4 w-4 rounded border-slate-600 bg-slate-800 text-emerald-600 focus:ring-emerald-600 transition-colors cursor-pointer">
+                </div>
+                <div class="text-sm leading-tight">
+                    <label for="chk-agree"
+                        class="font-medium text-slate-300 cursor-pointer hover:text-white transition-colors text-xs">I
+                        accept Terms & Conditions</label>
+                </div>
+            </div>
+
+            <button onclick="processEncryption()" id="btn-encrypt" disabled
+                class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-[0.98] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:transform-none">
+                <span>Start Encryption</span>
+                <i class="fa-solid fa-bolt text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Decrypt Panel -->
+        <div id="panel-decrypt" class="hidden glass-panel rounded-2xl p-6 md:p-8 space-y-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                <i class="fa-solid fa-unlock text-9xl text-blue-500"></i>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-slate-300">1. Select Encrypted File</label>
+                <div class="relative group">
+                    <input type="file" id="dec-file" class="hidden" accept=".enc,.txt"
+                        onchange="updateFileName('dec-file', 'dec-filename')">
+                    <label for="dec-file"
+                        class="flex items-center justify-center w-full h-24 px-4 transition bg-slate-800/50 border-2 border-slate-700 border-dashed rounded-xl appearance-none cursor-pointer hover:border-blue-500/50 hover:bg-slate-800 focus:outline-none">
+                        <div class="flex flex-col items-center space-y-2 text-center">
+                            <i
+                                class="fa-solid fa-file-shield text-xl text-slate-400 group-hover:text-blue-400 transition-colors"></i>
+                            <span class="font-medium text-slate-400 group-hover:text-slate-200 text-xs"><span
+                                    class="text-blue-400">Select file</span> (.enc or .txt)</span>
+                            <span id="dec-filename" class="text-xs text-slate-500 max-w-[200px] truncate">No file
+                                selected</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-slate-300">2. Enter Password</label>
+                <div class="relative">
+                    <input type="password" id="dec-password" placeholder="Original password"
+                        class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-slate-600 text-sm">
+                    <i class="fa-solid fa-key absolute right-4 top-3.5 text-slate-600 text-xs"></i>
+                </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-slate-900/30 border border-slate-700/50">
+                <div class="flex h-6 items-center">
+                    <input id="chk-agree-dec" type="checkbox" onchange="toggleDecryptButton()"
+                        class="h-4 w-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-600 transition-colors cursor-pointer">
+                </div>
+                <div class="text-sm leading-tight">
+                    <label for="chk-agree-dec"
+                        class="font-medium text-slate-300 cursor-pointer hover:text-white transition-colors text-xs">I
+                        accept Terms & Conditions</label>
+                </div>
+            </div>
+
+            <button onclick="processDecryption()" id="btn-decrypt" disabled
+                class="w-full bg-slate-200 hover:bg-white text-slate-900 font-bold py-3 rounded-xl shadow-lg transition-all transform active:scale-[0.98] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:transform-none">
+                <span>Decrypt File</span>
+                <i class="fa-solid fa-key text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Progress, Preview & Download Section -->
+        <div id="status-area" class="mt-4 w-full hidden animate-fade-in">
+            <!-- Progress Bar -->
+            <div id="progress-container" class="glass-panel p-4 rounded-xl border border-slate-700 mb-4">
+                <div class="flex justify-between text-xs text-slate-400 mb-2 font-mono">
+                    <span id="progress-text">Processing chunks...</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                    <div id="progress-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-150"
+                        style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Preview Pane -->
+            <div id="preview-container" class="hidden mb-4">
+                <div class="glass-panel rounded-xl border border-slate-700 overflow-hidden">
+                    <div class="bg-slate-800/50 px-4 py-2 border-b border-slate-700 flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">File Preview</span>
+                        <span id="preview-type-badge"
+                            class="px-2 py-0.5 rounded bg-slate-700 text-[10px] text-slate-400">UNKNOWN</span>
+                    </div>
+                    <div id="preview-content"
+                        class="p-4 bg-slate-900/50 min-h-[150px] max-h-[300px] overflow-auto flex items-center justify-center">
+                        <!-- Dynamic Content Goes Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Button -->
+            <div id="download-container" class="hidden">
+                <a id="download-link" class="hidden"></a>
+                <button id="manual-download-btn" onclick="triggerDownload()"
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-600/20 transition-all flex justify-center items-center gap-2 animate-bounce-subtle">
+                    <i class="fa-solid fa-cloud-arrow-down text-lg"></i>
+                    <span id="download-btn-text">Download File</span>
+                </button>
+                <div class="text-center mt-2">
+                    <button onclick="resetUI()" class="text-xs text-slate-500 hover:text-slate-300 underline">Start
+                        Over</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="mt-8 glass-panel rounded-2xl p-6 border border-slate-700/50">
+            <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-circle-question text-emerald-500"></i> What is this tool?
+            </h3>
+            <p class="text-sm text-slate-400 mb-4 ml-7">
+                This is a general-purpose file locker. It takes *any* computer file (documents, videos, zips, etc.)
+                and locks it inside a secure digital vault (encrypted file).
+            </p>
+            <div class="grid md:grid-cols-2 gap-4 text-sm text-slate-400 ml-7">
+                <div>
+                    <strong class="text-emerald-400 block mb-1">To Lock a File:</strong>
+                    <ol class="list-decimal list-inside space-y-1">
+                        <li>Upload your file.</li>
+                        <li>Set a password.</li>
+                        <li>Download the protected <code>.enc</code> file.</li>
+                    </ol>
+                </div>
+                <div>
+                    <strong class="text-blue-400 block mb-1">To Unlock:</strong>
+                    <ol class="list-decimal list-inside space-y-1">
+                        <li>Switch to "Decrypt".</li>
+                        <li>Upload the <code>.enc</code> file.</li>
+                        <li>Enter the original password to restore your file.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-8 text-center text-slate-500 text-xs">
+        <p>&copy; 2026 Stega Suite. Secure Local Encryption.</p>
+    </footer>
+
+    <!-- Policies Modal -->
+    <div id="policies-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+            onclick="document.getElementById('policies-modal').classList.add('hidden')"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div
+                    class="relative transform overflow-hidden rounded-2xl glass-panel text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-slate-700">
+                    <div class="px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div
+                                class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-slate-800 sm:mx-0 sm:h-10 sm:w-10">
+                                <i class="fa-solid fa-file-contract text-emerald-500"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                <h3 class="text-base font-semibold leading-6 text-white" id="modal-title">Terms &
+                                    Conditions (2026)</h3>
+                                <div
+                                    class="mt-2 text-sm text-slate-300 space-y-3 h-64 overflow-y-auto pr-2 custom-scroll">
+                                    <p class="text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Effective
+                                        Date: January 1, 2026</p>
+                                    <p><strong class="text-white">1. Acceptance:</strong> By using Stega Suite, you
+                                        agree to these terms.</p>
+                                    <p><strong class="text-white">2. "As Is" Service:</strong> Software provided without
+                                        warranty. We disclaim fitness for purpose.</p>
+                                    <p><strong class="text-white">3. Zero Liability:</strong> We are <strong
+                                            class="text-white">NOT responsible</strong> for data loss, corruption, or
+                                        security breaches.</p>
+                                    <p><strong class="text-white">4. Irreversible:</strong> Lost passwords cannot be
+                                        recovered. Data will be lost.</p>
+                                    <p><strong class="text-white">5. User Risk:</strong> You assume all risks associated
+                                        with encryption and data storage.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-slate-800/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-700">
+                        <button type="button"
+                            class="inline-flex w-full justify-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 sm:ml-3 sm:w-auto transition-colors"
+                            onclick="document.getElementById('policies-modal').classList.add('hidden')">I Agree</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <div class="glass-panel px-4 py-3 rounded-lg border-l-4 border-emerald-500 flex items-center shadow-2xl">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-500 mr-3"></i>
+            <div>
+                <h4 id="toast-title" class="text-sm font-bold text-white">Success</h4>
+                <p id="toast-msg" class="text-xs text-slate-300">Operation completed.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks for stability on low-end devices
+        const SALT_LEN = 16;
+        const IV_LEN = 12;
+        const ITERATIONS = 100000;
+        const KEY_LEN = 256;
+
+        let currentDownloadUrl = null;
+        let currentDownloadName = '';
+
+        // --- UI Logic ---
+
+        function switchTab(tab) {
+            resetUI();
+            const encryptBtn = document.getElementById('tab-encrypt');
+            const decryptBtn = document.getElementById('tab-decrypt');
+            const encryptPanel = document.getElementById('panel-encrypt');
+            const decryptPanel = document.getElementById('panel-decrypt');
+
+            if (tab === 'encrypt') {
+                encryptBtn.classList.add('active', 'text-slate-900');
+                encryptBtn.classList.remove('text-slate-400');
+                decryptBtn.classList.remove('active', 'text-slate-900');
+                decryptBtn.classList.add('text-slate-400');
+                encryptPanel.classList.remove('hidden');
+                decryptPanel.classList.add('hidden');
+            } else {
+                decryptBtn.classList.add('active', 'text-slate-900');
+                decryptBtn.classList.remove('text-slate-400');
+                encryptBtn.classList.remove('active', 'text-slate-900');
+                encryptBtn.classList.add('text-slate-400');
+                decryptPanel.classList.remove('hidden');
+                encryptPanel.classList.add('hidden');
+            }
+        }
+
+        function updateFileName(inputId, displayId) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+            if (input.files && input.files.length > 0) {
+                display.textContent = input.files[0].name + ` (${formatBytes(input.files[0].size)})`;
+                display.classList.add('text-white');
+            } else {
+                display.textContent = inputId === 'enc-file' ? "Any format" : "No file selected";
+                display.classList.remove('text-white');
+            }
+            resetUI();
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (!+bytes) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        }
+
+        function showToast(title, message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastTitle = document.getElementById('toast-title');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+            const border = toast.querySelector('div');
+
+            toastTitle.innerText = title;
+            toastMsg.innerText = message;
+
+            if (type === 'error') {
+                toastIcon.className = "fa-solid fa-circle-xmark text-red-500 mr-3";
+                border.className = "glass-panel px-4 py-3 rounded-lg border-l-4 border-red-500 flex items-center shadow-2xl";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-500 mr-3";
+                border.className = "glass-panel px-4 py-3 rounded-lg border-l-4 border-emerald-500 flex items-center shadow-2xl";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function resetUI() {
+            document.getElementById('status-area').classList.add('hidden');
+            document.getElementById('download-container').classList.add('hidden');
+            document.getElementById('preview-container').classList.add('hidden');
+            document.getElementById('progress-container').classList.remove('hidden'); // Ensure progress is visible for next run
+            updateProgress(0, "Ready");
+
+            if (currentDownloadUrl) {
+                window.URL.revokeObjectURL(currentDownloadUrl);
+                currentDownloadUrl = null;
+            }
+        }
+
+        function toggleEncryptButton() {
+            const chk = document.getElementById('chk-agree');
+            const btn = document.getElementById('btn-encrypt');
+            if (chk && btn) btn.disabled = !chk.checked;
+        }
+
+        function toggleDecryptButton() {
+            const chk = document.getElementById('chk-agree-dec');
+            const btn = document.getElementById('btn-decrypt');
+            if (chk && btn) btn.disabled = !chk.checked;
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+            document.getElementById('progress-percent').innerText = `${Math.round(percent)}%`;
+            if (text) document.getElementById('progress-text').innerText = text;
+        }
+
+        function showDownloadReady(blob, filename, mimeType) {
+            currentDownloadUrl = window.URL.createObjectURL(blob);
+            currentDownloadName = filename;
+
+            const progressContainer = document.getElementById('progress-container');
+            const downloadContainer = document.getElementById('download-container');
+            const previewContainer = document.getElementById('preview-container');
+            const previewContent = document.getElementById('preview-content');
+            const previewBadge = document.getElementById('preview-type-badge');
+            const downloadBtnText = document.getElementById('download-btn-text');
+
+            progressContainer.classList.add('hidden');
+            downloadContainer.classList.remove('hidden');
+
+            // Set Button Text
+            downloadBtnText.innerText = `Download ${filename}`;
+
+            // --- Preview Logic ---
+            previewContent.innerHTML = ''; // Clear previous
+            previewBadge.innerText = mimeType.split('/')[1]?.toUpperCase() || 'FILE';
+
+            let showPreview = true;
+
+            if (mimeType.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = currentDownloadUrl;
+                img.className = 'max-w-full max-h-[250px] rounded object-contain';
+                previewContent.appendChild(img);
+            } else if (mimeType.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = currentDownloadUrl;
+                video.controls = true;
+                video.className = 'max-w-full max-h-[250px] rounded';
+                previewContent.appendChild(video);
+            } else if (mimeType.startsWith('audio/')) {
+                const audio = document.createElement('audio');
+                audio.src = currentDownloadUrl;
+                audio.controls = true;
+                audio.className = 'w-full';
+                previewContent.appendChild(audio);
+            } else if (mimeType === 'text/plain' || mimeType === 'application/json' || mimeType.includes('javascript') || mimeType.includes('xml')) {
+                const pre = document.createElement('pre');
+                pre.className = 'text-xs text-slate-300 font-mono whitespace-pre-wrap break-all w-full text-left';
+                // Read first 2KB only for preview
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    pre.textContent = e.target.result + (blob.size > 2048 ? '\n... (truncated)' : '');
+                };
+                reader.readAsText(blob.slice(0, 2048));
+                previewContent.appendChild(pre);
+            } else if (mimeType === 'application/pdf') {
+                const iframe = document.createElement('iframe');
+                iframe.src = currentDownloadUrl;
+                iframe.className = 'w-full h-[300px] rounded border border-slate-700 bg-white';
+                previewContent.appendChild(iframe);
+            } else {
+                // Generic Fallback
+                previewContent.innerHTML = `
+                    <div class="flex flex-col items-center text-slate-500">
+                        <i class="fa-solid fa-file-circle-question text-4xl mb-2"></i>
+                        <span class="text-xs">Preview not available for this file type.</span>
+                    </div>
+                `;
+            }
+
+            if (showPreview) {
+                previewContainer.classList.remove('hidden');
+            }
+
+            // Auto scroll
+            document.getElementById('status-area').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function triggerDownload() {
+            if (!currentDownloadUrl) return;
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = currentDownloadUrl;
+            a.download = currentDownloadName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast("Downloaded", "File saved to your device.");
+        }
+
+        // --- Cryptography Helpers ---
+
+        async function deriveKey(password, salt, usage) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+            return await window.crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: ITERATIONS, hash: "SHA-256" },
+                keyMaterial,
+                { name: "AES-GCM", length: KEY_LEN },
+                false,
+                usage
+            );
+        }
+
+        function concat(buffers) {
+            let totalLen = 0;
+            for (let b of buffers) totalLen += b.byteLength;
+            let res = new Uint8Array(totalLen);
+            let offset = 0;
+            for (let b of buffers) {
+                res.set(new Uint8Array(b), offset);
+                offset += b.byteLength;
+            }
+            return res.buffer;
+        }
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        // --- Stream-Like Encryption ---
+
+        async function processEncryption() {
+            const fileInput = document.getElementById('enc-file');
+            const pwdInput = document.getElementById('enc-password');
+            const chkAgree = document.getElementById('chk-agree');
+            const format = document.querySelector('input[name="format"]:checked').value;
+
+            if (!fileInput.files.length) return showToast("Error", "No file selected.", "error");
+            if (!pwdInput.value) return showToast("Error", "Password required.", "error");
+            if (!chkAgree.checked) return showToast("Error", "Accept terms first.", "error");
+
+            const btn = document.getElementById('btn-encrypt');
+            btn.disabled = true;
+            document.getElementById('status-area').classList.remove('hidden');
+            document.getElementById('download-container').classList.add('hidden');
+            document.getElementById('preview-container').classList.add('hidden');
+            document.getElementById('progress-container').classList.remove('hidden');
+
+            try {
+                const file = fileInput.files[0];
+                const totalSize = file.size;
+                updateProgress(1, "Deriving Key...");
+
+                // 1. Setup
+                const salt = window.crypto.getRandomValues(new Uint8Array(SALT_LEN));
+                const key = await deriveKey(pwdInput.value, salt, ["encrypt"]);
+
+                const resultParts = [];
+                // Header: [Salt]
+                resultParts.push(salt);
+
+                // 2. Encrypt Metadata (Chunk 0)
+                const metadata = JSON.stringify({ n: file.name, t: file.type });
+                const metaBytes = new TextEncoder().encode(metadata);
+                const metaIv = window.crypto.getRandomValues(new Uint8Array(IV_LEN));
+                const metaCipher = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: metaIv }, key, metaBytes);
+
+                // Append Meta Chunk: [IV][Len][Cipher]
+                resultParts.push(metaIv);
+                resultParts.push(new Uint32Array([metaCipher.byteLength]));
+                resultParts.push(metaCipher);
+
+                // 3. Encrypt File Body in Chunks
+                let offset = 0;
+                while (offset < totalSize) {
+                    const slice = file.slice(offset, offset + CHUNK_SIZE);
+                    const chunkBuffer = await slice.arrayBuffer();
+
+                    const chunkIv = window.crypto.getRandomValues(new Uint8Array(IV_LEN));
+                    const chunkCipher = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: chunkIv }, key, chunkBuffer);
+
+                    // Append Data Chunk: [IV][Len][Cipher]
+                    resultParts.push(chunkIv);
+                    resultParts.push(new Uint32Array([chunkCipher.byteLength]));
+                    resultParts.push(chunkCipher);
+
+                    offset += CHUNK_SIZE;
+
+                    // Update UI & Yield
+                    const percent = (offset / totalSize) * 100;
+                    updateProgress(Math.min(99, percent), `Encrypting ${formatBytes(offset)}...`);
+                    await sleep(10); // Yield to main thread
+                }
+
+                // 4. Finalize
+                updateProgress(100, "Finalizing...");
+                let finalBlob;
+                let finalName = file.name + (format === 'binary' ? '.enc' : '.txt');
+                let finalType = format === 'binary' ? 'application/octet-stream' : 'text/plain';
+
+                if (format === 'binary') {
+                    finalBlob = new Blob(resultParts, { type: "application/octet-stream" });
+                } else {
+                    const fullBuffer = await new Blob(resultParts).arrayBuffer();
+                    const base64 = await blobToBase64(new Blob([fullBuffer]));
+                    finalBlob = new Blob([base64], { type: "text/plain" });
+                }
+
+                showDownloadReady(finalBlob, finalName, finalType);
+                showToast("Success", "Encryption complete!");
+                pwdInput.value = '';
+
+            } catch (err) {
+                console.error(err);
+                showToast("Failed", err.message, "error");
+                document.getElementById('status-area').classList.add('hidden');
+            } finally {
+                btn.disabled = false;
+                toggleEncryptButton();
+            }
+        }
+
+        // --- Stream-Like Decryption ---
+
+        async function processDecryption() {
+            const fileInput = document.getElementById('dec-file');
+            const pwdInput = document.getElementById('dec-password');
+            const chkAgree = document.getElementById('chk-agree-dec');
+
+            if (!fileInput.files.length) return showToast("Error", "No file selected.", "error");
+            if (!pwdInput.value) return showToast("Error", "Password required.", "error");
+            if (!chkAgree.checked) return showToast("Error", "Accept terms first.", "error");
+
+            const btn = document.getElementById('btn-decrypt');
+            btn.disabled = true;
+            document.getElementById('status-area').classList.remove('hidden');
+            document.getElementById('download-container').classList.add('hidden');
+            document.getElementById('preview-container').classList.add('hidden');
+            document.getElementById('progress-container').classList.remove('hidden');
+
+            try {
+                let file = fileInput.files[0];
+                updateProgress(1, "Analyzing file...");
+
+                // 1. Handle Text (.txt) input conversion if needed
+                if (file.name.endsWith('.txt')) {
+                    const text = await file.text();
+                    const cleanBase64 = text.replace(/\s/g, ''); // remove newlines
+                    // Convert base64 back to binary blob
+                    const binaryString = window.atob(cleanBase64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    file = new Blob([bytes]);
+                }
+
+                const totalSize = file.size;
+                let offset = 0;
+
+                // 2. Read Salt
+                const saltBlob = file.slice(0, SALT_LEN);
+                const salt = new Uint8Array(await saltBlob.arrayBuffer());
+                offset += SALT_LEN;
+
+                // 3. Derive Key
+                updateProgress(2, "Deriving Key...");
+                const key = await deriveKey(pwdInput.value, salt, ["decrypt"]);
+
+                let metadata = null;
+                const decryptedChunks = [];
+
+                // 4. Process Chunks Loop
+                let isFirstChunk = true;
+
+                while (offset < totalSize) {
+                    // Read IV (12) + Length (4)
+                    const headerBlob = file.slice(offset, offset + IV_LEN + 4);
+                    const headerBuf = await headerBlob.arrayBuffer();
+
+                    if (headerBuf.byteLength < IV_LEN + 4) break; // EOF check
+
+                    const iv = new Uint8Array(headerBuf.slice(0, IV_LEN));
+                    const lenView = new Uint32Array(headerBuf.slice(IV_LEN));
+                    const chunkLen = lenView[0];
+                    offset += IV_LEN + 4;
+
+                    // Read Ciphertext
+                    const cipherBlob = file.slice(offset, offset + chunkLen);
+                    const cipherBuf = await cipherBlob.arrayBuffer();
+                    offset += chunkLen;
+
+                    // Decrypt
+                    let plainBuf;
+                    try {
+                        plainBuf = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, cipherBuf);
+                    } catch (e) {
+                        throw new Error("Decryption failed. Wrong password?");
+                    }
+
+                    if (isFirstChunk) {
+                        // Metadata Chunk
+                        const enc = new TextDecoder();
+                        const metaStr = enc.decode(plainBuf);
+                        try {
+                            metadata = JSON.parse(metaStr);
+                        } catch (e) {
+                            metadata = { n: "restored_file", t: "application/octet-stream" };
+                        }
+                        isFirstChunk = false;
+                    } else {
+                        // Data Chunk
+                        decryptedChunks.push(plainBuf);
+                    }
+
+                    const percent = (offset / totalSize) * 100;
+                    updateProgress(Math.min(99, percent), `Decrypting ${formatBytes(offset)}...`);
+                    await sleep(5);
+                }
+
+                // 5. Finalize
+                updateProgress(100, "Done!");
+                const finalBlob = new Blob(decryptedChunks, { type: metadata ? metadata.t : 'application/octet-stream' });
+                showDownloadReady(finalBlob, metadata ? metadata.n : 'decrypted_file', metadata ? metadata.t : 'application/octet-stream');
+                showToast("Success", "Decryption complete!");
+                pwdInput.value = '';
+
+            } catch (err) {
+                console.error(err);
+                showToast("Failed", err.message, "error");
+                document.getElementById('status-area').classList.add('hidden');
+            } finally {
+                btn.disabled = false;
+                toggleDecryptButton();
+            }
+        }
+
+        // Helper for text format
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64String = reader.result.replace("data:text/plain;base64,", "").replace("data:application/octet-stream;base64,", ""); // Clean header
+                    resolve(base64String);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stega Suite Metadata Cleaner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        .drop-zone {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%23334155FF' stroke-width='2' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.active {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%233B82F6FF' stroke-width='2' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-2 rounded-lg">
+                    <i data-lucide="shield-check" class="text-white w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">Stega Suite <span
+                            class="text-blue-500">Cleaner</span></h1>
+                    <p class="text-xs text-slate-400">Client-side Metadata Sanitization</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4 text-sm text-slate-400">
+                <span class="flex items-center"><i data-lucide="wifi-off" class="w-4 h-4 mr-2"></i> Local
+                    Processing</span>
+                <span class="flex items-center"><i data-lucide="file-image" class="w-4 h-4 mr-2"></i> JPEG, PNG,
+                    WebP</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-8">
+
+        <!-- Intro Section -->
+        <section class="text-center max-w-2xl mx-auto space-y-4">
+            <h2 class="text-3xl font-bold text-white">Protect Your Privacy</h2>
+            <p class="text-slate-400">
+                Photos contain hidden metadata like GPS coordinates, camera model, and timestamps.
+                Stega Suite removes this data locally in your browser without re-encoding the image, preserving the
+                original quality.
+            </p>
+        </section>
+
+        <!-- Upload Area -->
+        <div id="dropZone"
+            class="drop-zone relative rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer group hover:bg-slate-800/30">
+            <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" multiple
+                accept="image/jpeg,image/png,image/webp">
+            <div class="bg-slate-800 p-4 rounded-full mb-4 group-hover:bg-slate-700 transition-colors">
+                <i data-lucide="upload-cloud" class="w-8 h-8 text-blue-500"></i>
+            </div>
+            <p class="text-lg font-medium text-slate-200">Drop images here to clean</p>
+            <p class="text-sm text-slate-500 mt-2">or click to browse files</p>
+            <div class="mt-4 flex space-x-2 text-xs text-slate-600 font-mono">
+                <span class="bg-slate-800 px-2 py-1 rounded">.JPG</span>
+                <span class="bg-slate-800 px-2 py-1 rounded">.PNG</span>
+                <span class="bg-slate-800 px-2 py-1 rounded">.WEBP</span>
+            </div>
+        </div>
+
+        <!-- File List -->
+        <div id="fileListContainer" class="hidden space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">Queue</h3>
+                <button id="clearAllBtn" class="text-sm text-red-400 hover:text-red-300 flex items-center">
+                    <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Clear All
+                </button>
+            </div>
+            <div id="fileList" class="grid grid-cols-1 gap-4">
+                <!-- File items injected here -->
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 max-w-2xl mx-auto">
+            <div class="flex items-center gap-3 mb-3 text-blue-400">
+                <i data-lucide="info" class="w-5 h-5"></i>
+                <h3 class="text-lg font-semibold text-white">How It Works</h3>
+            </div>
+            <div class="space-y-3 text-sm text-slate-400">
+                <p>
+                    <strong>What is Metadata?</strong> Digital photos often contain hidden information called "Exif
+                    data"
+                    (camera settings, capture date, and sometimes precise GPS location).
+                </p>
+                <p>
+                    <strong>Using this tool:</strong>
+                <ul class="list-disc list-inside ml-2 space-y-1 mt-1">
+                    <li>Drag and drop your images into the box above.</li>
+                    <li>The tool immediately scans and identifies hidden data tags.</li>
+                    <li>It automatically creates a "Clean" copy of the image with all metadata stripped out.</li>
+                    <li>Click "Save" to download the privacy-safe version.</li>
+                </ul>
+                </p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-6 mt-12">
+        <div
+            class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500">
+            <p>© 2026 Stega Suite. All operations run locally.</p>
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <span class="flex items-center"><i data-lucide="lock" class="w-3 h-3 mr-1"></i> Secure</span>
+                <span class="flex items-center"><i data-lucide="zap" class="w-3 h-3 mr-1"></i> Lossless</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Template for a File Item -->
+    <template id="fileItemTemplate">
+        <div
+            class="bg-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-700">
+            <div class="flex items-center space-x-4 w-full md:w-auto">
+                <div class="bg-slate-900 p-3 rounded-lg flex-shrink-0">
+                    <i data-lucide="file" class="w-6 h-6 text-blue-400 file-icon"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h4 class="font-medium text-slate-200 truncate file-name">filename.jpg</h4>
+                    <p class="text-xs text-slate-500 file-size">2.4 MB</p>
+                </div>
+            </div>
+
+            <div class="flex flex-1 items-center justify-end space-x-4 w-full md:w-auto">
+                <!-- Metadata Badges -->
+                <div class="flex flex-wrap gap-2 justify-end metadata-badges">
+                    <!-- Badges injected via JS -->
+                </div>
+
+                <div class="h-8 w-[1px] bg-slate-700 hidden md:block"></div>
+
+                <div class="flex items-center space-x-2">
+                    <button
+                        class="action-btn-download hidden bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
+                        <i data-lucide="download" class="w-4 h-4 mr-2"></i> Save
+                    </button>
+                    <span class="status-text text-sm text-slate-400 italic">Scanning...</span>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // --- Core Logic: Binary Parsers ---
+
+        class MetadataCleaner {
+            static async processFile(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const type = file.type;
+                let result = {
+                    cleanedBuffer: null,
+                    metadataFound: [],
+                    originalSize: arrayBuffer.byteLength,
+                    newSize: 0,
+                    error: null
+                };
+
+                try {
+                    if (type === 'image/jpeg') {
+                        const res = this.cleanJPEG(arrayBuffer);
+                        result.cleanedBuffer = res.buffer;
+                        result.metadataFound = res.metadata;
+                    } else if (type === 'image/png') {
+                        const res = this.cleanPNG(arrayBuffer);
+                        result.cleanedBuffer = res.buffer;
+                        result.metadataFound = res.metadata;
+                    } else if (type === 'image/webp') {
+                        const res = this.cleanWebP(arrayBuffer);
+                        result.cleanedBuffer = res.buffer;
+                        result.metadataFound = res.metadata;
+                    } else {
+                        result.error = "Unsupported format";
+                    }
+
+                    if (result.cleanedBuffer) {
+                        result.newSize = result.cleanedBuffer.byteLength;
+                    }
+
+                } catch (e) {
+                    console.error(e);
+                    result.error = "Parsing error";
+                }
+
+                return result;
+            }
+
+            // --- JPEG Parser ---
+            static cleanJPEG(buffer) {
+                const view = new DataView(buffer);
+                const metadata = [];
+
+                if (view.getUint16(0) !== 0xFFD8) throw new Error("Not a valid JPEG");
+
+                let pieces = [];
+                let pos = 0;
+
+                // Copy SOI (Start of Image)
+                pieces.push(buffer.slice(0, 2));
+                pos += 2;
+
+                while (pos < view.byteLength) {
+                    const marker = view.getUint16(pos);
+                    pos += 2;
+
+                    // SOS (Start of Scan) - Image data starts here, stop parsing
+                    if (marker === 0xFFDA) {
+                        pieces.push(buffer.slice(pos - 2));
+                        break;
+                    }
+
+                    // Standalone markers (RSTn, SOI, EOI, TEM, etc.) - no length field
+                    // 0xFF01 = TEM, 0xFFD0-D7 = RSTn, 0xFFD8=SOI, 0xFFD9=EOI
+                    if ((marker >= 0xFFD0 && marker <= 0xFFD9) || marker === 0xFF01) {
+                        pieces.push(buffer.slice(pos - 2, pos));
+                        continue;
+                    }
+
+                    // Markers with length
+                    const len = view.getUint16(pos);
+                    const segmentTotalLen = len + 2; // +2 for the marker itself which we already passed, but we need to slice carefully
+
+                    // Detect Metadata
+                    const isApp1 = marker === 0xFFE1;
+                    const isApp2 = marker === 0xFFE2; // Often ICC Profile
+                    const isApp13 = marker === 0xFFED; // Photoshop/IPTC
+                    const isCom = marker === 0xFFFE;   // Comment
+
+                    // Identify specific content
+                    if (isApp1) {
+                        // Check header for Exif or XMP
+                        if (len >= 6) {
+                            const id = this.getString(view, pos + 2, 4);
+                            if (id === "Exif") metadata.push("Exif");
+                            else if (id === "http") metadata.push("XMP");
+                            else metadata.push("APP1");
+                        } else {
+                            metadata.push("APP1");
+                        }
+                    } else if (isApp2) {
+                        // Check for ICC
+                        if (len >= 14) {
+                            const id = this.getString(view, pos + 2, 12);
+                            if (id.startsWith("ICC_PROFILE")) metadata.push("ICC Profile");
+                            else metadata.push("APP2");
+                        }
+                    } else if (isApp13) {
+                        metadata.push("IPTC/Photoshop");
+                    } else if (isCom) {
+                        metadata.push("Comment");
+                    }
+
+                    // Decide to keep or drop
+                    // We keep: APP0 (JFIF), APP14 (Adobe), DQT (DB), DHT (C4), SOFn (C0, C2..), DRI (DD)
+                    // We drop: APP1-APP15 (Except APP14), COM
+                    const isApp0 = marker === 0xFFE0;
+                    const isApp14 = marker === 0xFFEE;
+
+                    // Logic: Drop all APPn except APP0/APP14. Drop COM.
+                    const isAppN = marker >= 0xFFE0 && marker <= 0xFFEF;
+                    const shouldDrop = (isAppN && !isApp0 && !isApp14) || isCom;
+
+                    if (!shouldDrop) {
+                        // Keep this segment (marker + length + data)
+                        // We went forward 2 (marker) + 2 (length read). 
+                        // The slice should be from (pos - 2 - 2) to (pos + len)? 
+                        // Wait, logic check:
+                        // 'pos' is currently at start of Data.
+                        // We read marker at pos-2.
+                        // We need to copy [marker, length_high, length_low, data...]
+                        // The 'len' value includes the 2 length bytes.
+                        pieces.push(buffer.slice(pos - 4, pos + len - 2));
+                    }
+
+                    pos += (len - 2);
+                }
+
+                // Concatenate pieces
+                const blob = new Blob(pieces, { type: 'image/jpeg' });
+                return {
+                    buffer: blob.arrayBuffer(), // This returns a promise, handled in processFile via await on blob methods usually, but here we can do:
+                    metadata: [...new Set(metadata)],
+                    blob: blob // easier helper
+                };
+            }
+
+            // --- PNG Parser ---
+            static cleanPNG(buffer) {
+                const view = new DataView(buffer);
+                const metadata = [];
+                const pieces = [];
+
+                // Magic number 89 50 4E 47 0D 0A 1A 0A
+                if (view.getUint32(0) !== 0x89504E47 || view.getUint32(4) !== 0x0D0A1A0A) {
+                    throw new Error("Not a valid PNG");
+                }
+
+                pieces.push(buffer.slice(0, 8)); // Signature
+                let pos = 8;
+
+                while (pos < view.byteLength) {
+                    const len = view.getUint32(pos);
+                    const type = this.getString(view, pos + 4, 4);
+
+                    // Critical chunks: IHDR, PLTE, IDAT, IEND
+                    // Necessary for transparency/rendering: tRNS
+                    const critical = ['IHDR', 'PLTE', 'IDAT', 'IEND', 'tRNS'];
+                    const isCritical = critical.includes(type);
+
+                    // Known metadata chunks to flag
+                    const metaMap = {
+                        'eXIf': 'Exif',
+                        'iCCP': 'ICC Profile',
+                        'iTXt': 'Intl Text',
+                        'tEXt': 'Text',
+                        'zTXt': 'Compressed Text',
+                        'pHYs': 'Physical Dimensions', // Safe to remove usually for web, can be kept
+                        'sRGB': 'sRGB Info',
+                        'gAMA': 'Gamma',
+                        'cHRM': 'Chromaticity',
+                        'tIME': 'Timestamp'
+                    };
+
+                    if (metaMap[type]) {
+                        metadata.push(metaMap[type]);
+                    } else if (!isCritical) {
+                        // If it's unknown ancillary, log it simply as "Ancillary"
+                        // metadata.push(`Chunk: ${type}`);
+                    }
+
+                    if (isCritical) {
+                        // Keep critical chunks
+                        // Total chunk size = 4 (len) + 4 (type) + len (data) + 4 (crc)
+                        const totalLen = 12 + len;
+                        pieces.push(buffer.slice(pos, pos + totalLen));
+                    }
+                    // Ancillary chunks are skipped (removed)
+
+                    pos += 12 + len;
+                }
+
+                const blob = new Blob(pieces, { type: 'image/png' });
+                return {
+                    buffer: null, // handled by caller using blob logic if needed, but we return object 
+                    // Actually let's return a simple object structure compatible with processFile
+                    blob: blob,
+                    metadata: [...new Set(metadata)]
+                };
+            }
+
+            // --- WebP Parser ---
+            static cleanWebP(buffer) {
+                const view = new DataView(buffer);
+                const metadata = [];
+
+                // RIFF Header
+                if (this.getString(view, 0, 4) !== "RIFF" || this.getString(view, 8, 4) !== "WEBP") {
+                    throw new Error("Not a valid WebP");
+                }
+
+                let pieces = [];
+                // We will rebuild the RIFF header at the end because size changes
+
+                let pos = 12;
+                let hasVP8X = false;
+                let vp8xData = null;
+
+                while (pos < view.byteLength) {
+                    const chunkType = this.getString(view, pos, 4);
+                    const chunkLen = view.getUint32(pos + 4, true); // Little endian
+
+                    // Pad length if odd
+                    const paddedLen = chunkLen + (chunkLen % 2);
+
+                    if (chunkType === "VP8X") {
+                        hasVP8X = true;
+                        // Copy data, we might need to modify flags
+                        let chunkData = buffer.slice(pos + 8, pos + 8 + chunkLen);
+                        // Clone it to modify
+                        let dataView = new DataView(chunkData.slice(0));
+                        let flags = dataView.getUint8(0);
+
+                        // Flags: 
+                        // Bit 1: ICC
+                        // Bit 3: Exif
+                        // Bit 4: XMP
+                        // 0001 0010 = 0x12 (Exif + ICC)
+
+                        if (flags & 0x20) metadata.push("ICC Profile"); // Bit 5 (0x20) ? No, standard says:
+                        // Byte 0: Rsv(2) ICC(1) Alpha(1) Exif(1) XMP(1) Anim(1) Rsv(1)
+                        // Wait, libwebp spec:
+                        // Bits: Rsv:2, ICC:1, Alpha:1, Exif:1, XMP:1, Anim:1, Rsv:1
+                        // 0x20 = ICC
+                        // 0x08 = Exif
+                        // 0x04 = XMP
+
+                        if (flags & 0x20) { metadata.push("ICC Profile"); flags &= ~0x20; }
+                        if (flags & 0x08) { metadata.push("Exif"); flags &= ~0x08; }
+                        if (flags & 0x04) { metadata.push("XMP"); flags &= ~0x04; }
+
+                        dataView.setUint8(0, flags);
+                        vp8xData = dataView.buffer;
+
+                        // We add VP8X later
+                    }
+                    else if (chunkType === "EXIF") {
+                        metadata.push("Exif");
+                        // Skip
+                    }
+                    else if (chunkType === "ICCP") {
+                        metadata.push("ICC Profile");
+                        // Skip
+                    }
+                    else if (chunkType === "XMP ") {
+                        metadata.push("XMP");
+                        // Skip
+                    }
+                    else {
+                        // Keep other chunks (VP8, VP8L, ALPH, ANIM, ANMF)
+                        pieces.push({
+                            type: chunkType,
+                            data: buffer.slice(pos + 8, pos + 8 + chunkLen)
+                        });
+                    }
+
+                    pos += 8 + paddedLen;
+                }
+
+                // Reconstruct
+                // 1. RIFF Header placeholder
+                // 2. VP8X (if existed)
+                // 3. Other chunks
+
+                const finalParts = [];
+                // Header (Size 0 for now)
+                finalParts.push(this.strToBuffer("RIFF"));
+                finalParts.push(new Uint32Array([0])); // Placeholder for file size
+                finalParts.push(this.strToBuffer("WEBP"));
+
+                if (hasVP8X && vp8xData) {
+                    finalParts.push(this.strToBuffer("VP8X"));
+                    finalParts.push(new Uint32Array([vp8xData.byteLength]).buffer); // Little endian?
+                    // Wait, webp chunks are little endian length
+                    // Need to be careful constructing Uint32Array as it uses system endianness. 
+                    // Better to use DataView for writing numbers.
+                    finalParts.pop(); // remove the array
+                    let lenBuf = new ArrayBuffer(4);
+                    new DataView(lenBuf).setUint32(0, vp8xData.byteLength, true);
+                    finalParts.push(lenBuf);
+                    finalParts.push(vp8xData);
+                }
+
+                for (let p of pieces) {
+                    finalParts.push(this.strToBuffer(p.type));
+                    let lenBuf = new ArrayBuffer(4);
+                    new DataView(lenBuf).setUint32(0, p.data.byteLength, true);
+                    finalParts.push(lenBuf);
+                    finalParts.push(p.data);
+                    // Padding byte if odd
+                    if (p.data.byteLength % 2 !== 0) {
+                        finalParts.push(new Uint8Array([0]));
+                    }
+                }
+
+                const blob = new Blob(finalParts, { type: 'image/webp' });
+
+                // Fix RIFF size
+                return blob.arrayBuffer().then(b => {
+                    const v = new DataView(b);
+                    // File size = Total Size - 8
+                    v.setUint32(4, b.byteLength - 8, true);
+                    return {
+                        blob: new Blob([b], { type: 'image/webp' }),
+                        metadata: [...new Set(metadata)]
+                    };
+                });
+            }
+
+            // Helpers
+            static getString(view, offset, length) {
+                let str = "";
+                for (let i = 0; i < length; i++) {
+                    str += String.fromCharCode(view.getUint8(offset + i));
+                }
+                return str;
+            }
+
+            static strToBuffer(str) {
+                const buf = new Uint8Array(str.length);
+                for (let i = 0; i < str.length; i++) {
+                    buf[i] = str.charCodeAt(i);
+                }
+                return buf.buffer;
+            }
+        }
+
+
+        // --- UI Interaction ---
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const fileList = document.getElementById('fileList');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const template = document.getElementById('fileItemTemplate');
+
+        // Drag & Drop Events
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('active');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('active');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('active');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+            fileInput.value = ''; // Reset
+        });
+
+        clearAllBtn.addEventListener('click', () => {
+            fileList.innerHTML = '';
+            fileListContainer.classList.add('hidden');
+        });
+
+        async function handleFiles(files) {
+            if (files.length > 0) {
+                fileListContainer.classList.remove('hidden');
+            }
+
+            for (const file of files) {
+                // Validation
+                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                    // Skip or show error? Let's show error item
+                    createFileItem(file, null, "Format not supported");
+                    continue;
+                }
+
+                const uiItem = createFileItem(file);
+
+                // Process
+                try {
+                    // For WebP promise handling is slightly different in my class structure return
+                    let result;
+                    if (file.type === 'image/webp') {
+                        result = await MetadataCleaner.processFile(file).then(r => r.blob ? { cleanedBuffer: r.blob, metadataFound: r.metadata } : r);
+                        // Note: processFile returns {cleanedBuffer(Promise|Buffer), metadata...} 
+                        // I need to normalize the async nature of my sloppy class above
+                    } else {
+                        // JPEG/PNG
+                        const processed = await MetadataCleaner.processFile(file);
+                        // For consistency, convert blob to standard object if needed, 
+                        // but processFile wrapper already handles arrayBuffer conversion.
+                        // Wait, my cleaner methods return objects with `blob` or `buffer`.
+                        // processFile returns `cleanedBuffer`. 
+
+                        // Let's fix the cleaner interaction for robustness.
+                        // processFile implementation above:
+                        // calls cleanJPEG -> returns {buffer (promise?? no, blob.arrayBuffer() returns promise)}
+                        // So I need to await the buffer in processFile
+
+                        // Re-evaluating processFile wrapper:
+                        // `res.buffer` is a Promise in my cleanJPEG implementation.
+                        // I should await it inside processFile.
+                    }
+
+                    // Actually, let's fix the processFile to be robust and clean
+                    const arrayBuffer = await file.arrayBuffer();
+                    let cleanResult = { blob: null, metadata: [] };
+
+                    if (file.type === 'image/jpeg') {
+                        const res = MetadataCleaner.cleanJPEG(arrayBuffer);
+                        cleanResult.blob = res.blob;
+                        cleanResult.metadata = res.metadata;
+                    } else if (file.type === 'image/png') {
+                        const res = MetadataCleaner.cleanPNG(arrayBuffer);
+                        cleanResult.blob = res.blob;
+                        cleanResult.metadata = res.metadata;
+                    } else if (file.type === 'image/webp') {
+                        const res = await MetadataCleaner.cleanWebP(arrayBuffer);
+                        cleanResult.blob = res.blob;
+                        cleanResult.metadata = res.metadata;
+                    }
+
+                    updateFileItemSuccess(uiItem, cleanResult, file.name);
+
+                } catch (err) {
+                    console.error(err);
+                    updateFileItemError(uiItem, "Processing Failed");
+                }
+            }
+        }
+
+        function createFileItem(file, error = null) {
+            const clone = template.content.cloneNode(true);
+            const container = clone.querySelector('div');
+
+            // Set details
+            container.querySelector('.file-name').textContent = file.name;
+            container.querySelector('.file-size').textContent = formatBytes(file.size);
+
+            // Icon based on type
+            const icon = container.querySelector('.file-icon');
+            if (error) {
+                icon.setAttribute('data-lucide', 'alert-circle');
+                icon.classList.remove('text-blue-400');
+                icon.classList.add('text-red-400');
+                container.querySelector('.status-text').textContent = error;
+                container.querySelector('.status-text').classList.add('text-red-400');
+            }
+
+            fileList.appendChild(container);
+            lucide.createIcons();
+            return container; // Return the DOM element to update later
+        }
+
+        function updateFileItemSuccess(element, result, originalName) {
+            const statusText = element.querySelector('.status-text');
+            const downloadBtn = element.querySelector('.action-btn-download');
+            const badgesContainer = element.querySelector('.metadata-badges');
+
+            // Metadata Badges
+            if (result.metadata.length === 0) {
+                const badge = document.createElement('span');
+                badge.className = 'px-2 py-1 bg-green-500/10 text-green-400 text-xs rounded border border-green-500/20';
+                badge.textContent = "Clean";
+                badgesContainer.appendChild(badge);
+            } else {
+                result.metadata.forEach(meta => {
+                    const badge = document.createElement('span');
+                    badge.className = 'px-2 py-1 bg-yellow-500/10 text-yellow-400 text-xs rounded border border-yellow-500/20';
+                    badge.textContent = meta;
+                    badgesContainer.appendChild(badge);
+                });
+
+                // Add "Cleaned" label
+                const cleanBadge = document.createElement('span');
+                cleanBadge.className = 'px-2 py-1 bg-blue-500/10 text-blue-400 text-xs rounded border border-blue-500/20 font-bold';
+                cleanBadge.textContent = "Removed";
+                badgesContainer.appendChild(cleanBadge);
+            }
+
+            // Status
+            statusText.classList.add('hidden');
+
+            // Download Button
+            downloadBtn.classList.remove('hidden');
+            downloadBtn.onclick = () => {
+                const url = URL.createObjectURL(result.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // Prepend "clean_"
+                a.download = "clean_" + originalName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+        }
+
+        function updateFileItemError(element, msg) {
+            const statusText = element.querySelector('.status-text');
+            statusText.textContent = msg;
+            statusText.classList.add('text-red-400');
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+    </script>
+</body>
+
+</html>

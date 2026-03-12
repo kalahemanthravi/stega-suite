@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stega Suite | Text Behind File</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Disabled state styling */
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            filter: grayscale(1);
+        }
+
+        /* Modal transition */
+        .modal {
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col relative">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="file-text" class="w-8 h-8 text-blue-500"></i>
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                    Text Behind File</h1>
+            </div>
+            <div class="text-xs text-slate-500 font-mono hidden sm:block">
+                VER: 2.1.0 // SECURE-MODE
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-8">
+        <div class="max-w-4xl mx-auto">
+
+            <!-- Disclaimer Banner -->
+            <div class="bg-yellow-900/30 border-l-4 border-yellow-500 p-4 mb-8 rounded-r-lg">
+                <div class="flex items-start gap-3">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-500 mt-1 flex-shrink-0"></i>
+                    <div>
+                        <h3 class="font-bold text-yellow-500 text-sm uppercase tracking-wider">Usage Prerequisite</h3>
+                        <p class="text-sm text-yellow-200/80 mt-1">
+                            Use of this software is subject to strict Terms and Conditions. You must agree to the
+                            policies below before performing any encryption, decryption, or scanning operations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="flex border-b border-slate-700 mb-6 overflow-x-auto">
+                <button onclick="switchTab('lsb')" id="tab-lsb"
+                    class="tab-active px-6 py-3 font-medium text-sm transition-colors hover:text-blue-400 whitespace-nowrap">
+                    Method 1: Pixel Stealth (LSB)
+                </button>
+                <button onclick="switchTab('append')" id="tab-append"
+                    class="px-6 py-3 font-medium text-sm text-slate-400 transition-colors hover:text-blue-400 whitespace-nowrap">
+                    Method 2: High Capacity (Append)
+                </button>
+                <button onclick="switchTab('detect')" id="tab-detect"
+                    class="px-6 py-3 font-medium text-sm text-slate-400 transition-colors hover:text-red-400 whitespace-nowrap flex items-center gap-2">
+                    <i data-lucide="scan-eye" class="w-4 h-4"></i> Anomaly Detector
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="glass-panel rounded-xl p-6 shadow-2xl">
+
+                <!-- TAB 1: LSB STEGANOGRAPHY (Images) -->
+                <div id="view-lsb" class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="image" class="w-5 h-5"></i>
+                            Pixel Manipulation (LSB)
+                        </h2>
+                        <span
+                            class="bg-green-900/50 text-green-400 text-xs px-2 py-1 rounded border border-green-800">Undetectable
+                            by Basic Scanner</span>
+                    </div>
+                    <p class="text-slate-400 text-sm">
+                        Hides data inside the least significant bits of image pixels. Visual quality is preserved.
+                        <strong>Encryption:</strong> AES-GCM. <strong>Supports:</strong> PNG (Recommended).
+                    </p>
+
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <!-- Hide Section -->
+                        <div class="space-y-4 border-r border-slate-700 pr-0 md:pr-8">
+                            <h3 class="text-blue-400 font-semibold uppercase text-xs tracking-wider">Hide Data</h3>
+
+                            <input type="file" id="lsb-input-file" accept="image/*"
+                                class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-900 file:text-blue-300 hover:file:bg-blue-800 transition-all" />
+
+                            <textarea id="lsb-secret-text" rows="3" placeholder="Secret Message..."
+                                class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm focus:outline-none focus:border-blue-500"></textarea>
+
+                            <input type="password" id="lsb-pass-enc" placeholder="Encryption Password"
+                                class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm focus:outline-none focus:border-blue-500">
+
+                            <!-- Agreement Checkbox -->
+                            <div class="flex items-start gap-2 pt-2">
+                                <input type="checkbox" id="lsb-agree-hide"
+                                    class="mt-1 w-4 h-4 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500"
+                                    onchange="toggleBtn('lsb-btn-hide', this.checked)">
+                                <label for="lsb-agree-hide" class="text-xs text-slate-400">
+                                    I agree to the <a href="#" onclick="openTerms()"
+                                        class="text-blue-400 hover:underline">Terms & Conditions</a>. I accept full
+                                    responsibility for data loss or leaks.
+                                </label>
+                            </div>
+
+                            <button id="lsb-btn-hide" onclick="lsbHide()"
+                                class="btn-disabled w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center justify-center gap-2"
+                                disabled>
+                                <i data-lucide="lock" class="w-4 h-4"></i> Encrypt & Hide
+                            </button>
+                        </div>
+
+                        <!-- Reveal Section -->
+                        <div class="space-y-4">
+                            <h3 class="text-purple-400 font-semibold uppercase text-xs tracking-wider">Reveal Data</h3>
+
+                            <input type="file" id="lsb-decode-file" accept="image/*"
+                                class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-900 file:text-purple-300 hover:file:bg-purple-800 transition-all" />
+
+                            <input type="password" id="lsb-pass-dec" placeholder="Decryption Password"
+                                class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm focus:outline-none focus:border-purple-500">
+
+                            <!-- Agreement Checkbox -->
+                            <div class="flex items-start gap-2 pt-2">
+                                <input type="checkbox" id="lsb-agree-reveal"
+                                    class="mt-1 w-4 h-4 rounded bg-slate-800 border-slate-600 text-purple-600 focus:ring-purple-500"
+                                    onchange="toggleBtn('lsb-btn-reveal', this.checked)">
+                                <label for="lsb-agree-reveal" class="text-xs text-slate-400">
+                                    I agree to the <a href="#" onclick="openTerms()"
+                                        class="text-blue-400 hover:underline">Terms & Conditions</a>.
+                                </label>
+                            </div>
+
+                            <button id="lsb-btn-reveal" onclick="lsbReveal()"
+                                class="btn-disabled w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded transition-colors flex items-center justify-center gap-2"
+                                disabled>
+                                <i data-lucide="unlock" class="w-4 h-4"></i> Decrypt & Read
+                            </button>
+
+                            <div id="lsb-result"
+                                class="hidden p-3 bg-slate-800 rounded border border-slate-700 text-sm font-mono break-all">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="lsb-output-container" class="hidden mt-4 pt-4 border-t border-slate-700 text-center">
+                        <p class="text-sm text-green-400 mb-2">Image Generated Successfully! Right-click to save or use
+                            button below.</p>
+                        <canvas id="lsb-canvas"
+                            class="max-w-full h-auto border border-slate-600 rounded mx-auto mb-2"></canvas>
+                        <a id="lsb-download-link"
+                            class="inline-block text-xs text-blue-400 hover:underline cursor-pointer">Download Image</a>
+                    </div>
+                </div>
+
+                <!-- TAB 2: FILE APPENDING (Multi-format) -->
+                <div id="view-append" class="hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="files" class="w-5 h-5"></i>
+                            Binary Append (High Capacity)
+                        </h2>
+                        <span
+                            class="bg-red-900/50 text-red-400 text-xs px-2 py-1 rounded border border-red-800">Detectable</span>
+                    </div>
+                    <p class="text-slate-400 text-sm">
+                        Appends data to the EOF (End of File). Increases file size significantly if data is large.
+                        <strong>Supports:</strong> Images, Videos (MP4), Audio (MP3), PDFs.
+                    </p>
+
+                    <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">Carrier File</label>
+                                    <input type="file" id="append-input-file"
+                                        class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-slate-200 hover:file:bg-slate-600" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">Password</label>
+                                    <input type="password" id="append-pass"
+                                        class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm"
+                                        placeholder="Optional but recommended">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Large Payload Text</label>
+                                <textarea id="append-text" rows="5"
+                                    class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm font-mono"
+                                    placeholder="Enter large text data here..."></textarea>
+                            </div>
+
+                            <!-- Agreement Checkbox -->
+                            <div class="flex items-start gap-2 pt-2 border-t border-slate-700/50 mt-2">
+                                <input type="checkbox" id="append-agree-hide"
+                                    class="mt-1 w-4 h-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500"
+                                    onchange="toggleBtn('append-btn-hide', this.checked)">
+                                <label for="append-agree-hide" class="text-xs text-slate-400">
+                                    I agree to the <a href="#" onclick="openTerms()"
+                                        class="text-blue-400 hover:underline">Terms & Conditions</a>. I understand this
+                                    method modifies the file structure and may corrupt the file.
+                                </label>
+                            </div>
+
+                            <button id="append-btn-hide" onclick="appendHide()"
+                                class="btn-disabled w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded transition-colors flex items-center justify-center gap-2"
+                                disabled>
+                                <i data-lucide="download" class="w-4 h-4"></i> Generate & Download Carrier
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-slate-700">
+                        <h3 class="text-lg font-semibold text-white mb-4">Extract from Appended File</h3>
+                        <div class="flex flex-col gap-4">
+                            <div class="flex gap-4">
+                                <input type="file" id="append-extract-file"
+                                    class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-slate-200" />
+                                <input type="password" id="append-extract-pass"
+                                    class="w-48 bg-slate-900 border border-slate-700 rounded p-2 text-sm"
+                                    placeholder="Password">
+                            </div>
+
+                            <!-- Agreement Checkbox -->
+                            <div class="flex items-start gap-2">
+                                <input type="checkbox" id="append-agree-extract"
+                                    class="mt-1 w-4 h-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500"
+                                    onchange="toggleBtn('append-btn-extract', this.checked)">
+                                <label for="append-agree-extract" class="text-xs text-slate-400">
+                                    I agree to the <a href="#" onclick="openTerms()"
+                                        class="text-blue-400 hover:underline">Terms & Conditions</a>.
+                                </label>
+                            </div>
+
+                            <button id="append-btn-extract" onclick="appendReveal()"
+                                class="btn-disabled bg-indigo-900 hover:bg-indigo-800 text-indigo-100 px-6 py-2 rounded text-sm font-medium whitespace-nowrap w-full md:w-auto"
+                                disabled>Extract Data</button>
+                        </div>
+                        <div id="append-result"
+                            class="mt-4 hidden p-4 bg-slate-900 rounded border border-slate-700 text-sm font-mono overflow-auto max-h-60">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: DETECTOR -->
+                <div id="view-detect" class="hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="radar" class="w-5 h-5"></i>
+                            Anomaly Detector
+                        </h2>
+                    </div>
+                    <p class="text-slate-400 text-sm">
+                        Analyzes files for the specific signature used by the "Binary Append" method.
+                        It will confirm <strong>IF</strong> data exists, but will not show the content.
+                    </p>
+
+                    <!-- Agreement Checkbox -->
+                    <div class="flex items-center justify-center gap-2 mb-4 bg-slate-800/50 p-3 rounded">
+                        <input type="checkbox" id="detect-agree"
+                            class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-red-600 focus:ring-red-500"
+                            onchange="toggleDetect(this.checked)">
+                        <label for="detect-agree" class="text-xs text-slate-300">
+                            I agree to the <a href="#" onclick="openTerms()" class="text-blue-400 hover:underline">Terms
+                                & Conditions</a> to enable the scanner.
+                        </label>
+                    </div>
+
+                    <div class="relative group">
+                        <!-- Overlay for disabled state -->
+                        <div id="detect-overlay"
+                            class="absolute inset-0 bg-slate-900/80 z-10 flex items-center justify-center rounded-lg cursor-not-allowed">
+                            <span class="text-slate-500 text-sm font-semibold"><i data-lucide="lock"
+                                    class="inline w-4 h-4 mr-1"></i> Accept Terms to Unlock</span>
+                        </div>
+
+                        <div class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-700 rounded-lg bg-slate-800/30 hover:bg-slate-800/50 transition-colors"
+                            id="drop-zone">
+                            <i data-lucide="file-search" class="w-12 h-12 text-slate-500 mb-4"></i>
+                            <input type="file" id="detect-file" class="hidden" onchange="runDetection(this)" disabled>
+                            <label for="detect-file" id="detect-label"
+                                class="bg-slate-700 text-slate-500 px-6 py-2 rounded-full font-medium transition-colors pointer-events-none">
+                                Select File to Scan
+                            </label>
+                            <p class="mt-2 text-xs text-slate-500">Supports Images, Audio, Video, PDF</p>
+                        </div>
+                    </div>
+
+                    <div id="detect-result" class="hidden text-center p-6 rounded-lg animate-pulse">
+                        <!-- Result injected via JS -->
+                    </div>
+                </div>
+
+            </div>
+            <!-- Instructions -->
+            <div class="glass-panel p-6 mt-8 rounded-xl border border-slate-700/50">
+                <h3 class="text-lg font-bold text-blue-400 mb-3 flex items-center gap-2">
+                    <i data-lucide="info" class="w-5 h-5"></i> Usage Guide
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6 text-sm text-slate-400">
+                    <div>
+                        <p class="mb-2"><strong class="text-white">What is this?</strong></p>
+                        <p class="leading-relaxed">
+                            This tool allows you to hide a secret text message inside an image file (LSB method) or
+                            attach any file/text to the end of another file (Append method).
+                        </p>
+                    </div>
+                    <div>
+                        <p class="mb-2"><strong class="text-white">How to use (Pixel Stealth):</strong></p>
+                        <ol class="list-decimal list-inside space-y-1 marker:text-blue-500">
+                            <li>Select the "Pixel Stealth (LSB)" tab.</li>
+                            <li>Upload an image and type your secret message.</li>
+                            <li>Set a password and click <strong>Encrypt & Hide</strong>.</li>
+                            <li>Save the resulting PNG image. It contains your hidden message.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center p-6 text-slate-600 text-xs space-y-2">
+        <p>Secure Architecture • Client-Side Processing • No Server Uploads</p>
+        <p><a href="#" onclick="openTerms()" class="text-slate-500 hover:text-blue-400 underline">Privacy Policy & Terms
+                of Service</a></p>
+    </footer>
+
+    <!-- LEGAL MODAL -->
+    <div id="terms-modal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <div
+            class="bg-slate-900 border border-slate-700 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white">Terms of Service & Privacy Policy</h3>
+                <button onclick="closeTerms()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto text-sm text-slate-300 space-y-6">
+
+                <section>
+                    <h4 class="text-white font-bold mb-2 uppercase tracking-wide text-xs">1. Disclaimer of Warranties
+                        ("As Is")</h4>
+                    <p>The StegoVault software ("Service") is provided strictly on an "AS IS" and "AS AVAILABLE" basis.
+                        The developers, creators, and affiliates (collectively "Providers") expressly disclaim all
+                        warranties of any kind, whether express or implied. Use of this tool is entirely at your own
+                        risk.</p>
+                </section>
+
+                <section>
+                    <h4 class="text-white font-bold mb-2 uppercase tracking-wide text-xs">2. Limitation of Liability &
+                        Data Loss</h4>
+                    <p class="text-red-300 bg-red-900/20 p-3 rounded border border-red-900/50">
+                        <strong>CRITICAL:</strong> The Providers are NOT responsible for:
+                        <br>• Any loss of data resulting from embedding text into files.
+                        <br>• Any corruption of images, videos, PDFs, or audio files ("Carrier Files").
+                        <br>• Loss of access to hidden data due to forgotten passwords.
+                        <br>• Any "leaks" or exposure of data resulting from weak passwords, brute-force attacks, or
+                        cryptanalysis.
+                    </p>
+                </section>
+
+                <section>
+                    <h4 class="text-white font-bold mb-2 uppercase tracking-wide text-xs">3. User Responsibility</h4>
+                    <p>You acknowledge that you are solely responsible for the data you process using this tool. You
+                        agree NOT to use this Service for:
+                        <br>• Illegal communications or activities.
+                        <br>• Distributing malware or malicious code.
+                        <br>• Evading lawful surveillance or concealing criminal evidence.
+                        <br>• Infringing upon the intellectual property rights of others.
+                    </p>
+                </section>
+
+                <section>
+                    <h4 class="text-white font-bold mb-2 uppercase tracking-wide text-xs">4. Privacy Policy</h4>
+                    <p>
+                        <strong>Data Collection:</strong> This tool operates entirely client-side within your web
+                        browser. No files, passwords, or text data are ever uploaded to a server, cloud storage, or
+                        third party.
+                        <br><strong>Cookies:</strong> We do not use cookies or local storage tracking.
+                        <br><strong>Anonymity:</strong> Since no data leaves your device, we possess no user data to
+                        share with law enforcement or third parties even if requested.
+                    </p>
+                </section>
+
+                <section>
+                    <h4 class="text-white font-bold mb-2 uppercase tracking-wide text-xs">5. Indemnification</h4>
+                    <p>You agree to indemnify and hold harmless the Providers from any claims, damages, or expenses
+                        arising from your use of this software.</p>
+                </section>
+
+                <div class="pt-4 border-t border-slate-800 text-xs text-slate-500 italic">
+                    Last Updated: January 2025
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-800 bg-slate-800/50 flex justify-end">
+                <button onclick="closeTerms()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium text-sm transition-colors">
+                    I Understand
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL CONSTANTS ---
+        const MAGIC_STRING = "======STEGO_VAULT_DATA_START======";
+
+        // Initialize Icons with safety check
+        function initIcons() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            } else {
+                // Retry in 100ms if library isn't loaded yet
+                setTimeout(initIcons, 100);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', initIcons);
+
+        // --- UI LOGIC ---
+
+        function toggleBtn(btnId, isChecked) {
+            const btn = document.getElementById(btnId);
+            if (isChecked) {
+                btn.removeAttribute('disabled');
+                btn.classList.remove('btn-disabled');
+            } else {
+                btn.setAttribute('disabled', 'true');
+                btn.classList.add('btn-disabled');
+            }
+        }
+
+        function toggleDetect(isChecked) {
+            const overlay = document.getElementById('detect-overlay');
+            const fileInput = document.getElementById('detect-file');
+            const label = document.getElementById('detect-label');
+
+            if (isChecked) {
+                overlay.classList.add('hidden');
+                fileInput.removeAttribute('disabled');
+                label.classList.remove('bg-slate-700', 'text-slate-500', 'pointer-events-none');
+                label.classList.add('bg-slate-600', 'hover:bg-slate-500', 'text-white', 'cursor-pointer');
+            } else {
+                overlay.classList.remove('hidden');
+                fileInput.setAttribute('disabled', 'true');
+                label.classList.add('bg-slate-700', 'text-slate-500', 'pointer-events-none');
+                label.classList.remove('bg-slate-600', 'hover:bg-slate-500', 'text-white', 'cursor-pointer');
+            }
+        }
+
+        function openTerms() {
+            document.getElementById('terms-modal').classList.add('active');
+        }
+
+        function closeTerms() {
+            document.getElementById('terms-modal').classList.remove('active');
+        }
+
+        function switchTab(tabId) {
+            // Hide all
+            ['lsb', 'append', 'detect'].forEach(t => {
+                document.getElementById('view-' + t).classList.add('hidden');
+                document.getElementById('tab-' + t).classList.remove('tab-active', 'text-blue-400');
+                document.getElementById('tab-' + t).classList.add('text-slate-400');
+            });
+
+            // Show selected
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+            const activeTab = document.getElementById('tab-' + tabId);
+            activeTab.classList.add('tab-active');
+            activeTab.classList.remove('text-slate-400');
+
+            // Special color for detect tab
+            if (tabId === 'detect') {
+                activeTab.classList.remove('text-blue-400', 'tab-active');
+                activeTab.style.borderBottom = "2px solid #ef4444";
+                activeTab.style.color = "#ef4444";
+            } else {
+                activeTab.style.borderBottom = "";
+                activeTab.style.color = "";
+                activeTab.classList.add('tab-active'); // Re-add default active class
+            }
+        }
+
+        // --- CRYPTO UTILS ---
+
+        async function deriveKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+            );
+            return window.crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encryptData(text, password) {
+            if (!password) return text; // No encryption
+            const enc = new TextEncoder();
+            const salt = window.crypto.getRandomValues(new Uint8Array(16));
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveKey(password, salt);
+            const encrypted = await window.crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv }, key, enc.encode(text)
+            );
+
+            // Pack: salt(16) + iv(12) + data
+            const buffer = new Uint8Array(salt.byteLength + iv.byteLength + encrypted.byteLength);
+            buffer.set(salt, 0);
+            buffer.set(iv, 16);
+            buffer.set(new Uint8Array(encrypted), 28);
+
+            // Return as base64 to treat as string for stego
+            return "ENC:" + btoa(String.fromCharCode.apply(null, buffer));
+        }
+
+        async function decryptData(text, password) {
+            if (!text.startsWith("ENC:")) return text; // Not encrypted
+            if (!password) throw new Error("Password required");
+
+            try {
+                const base64 = text.substring(4);
+                const binaryStr = atob(base64);
+                const bytes = new Uint8Array(binaryStr.length);
+                for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+                const salt = bytes.slice(0, 16);
+                const iv = bytes.slice(16, 28);
+                const data = bytes.slice(28);
+
+                const key = await deriveKey(password, salt);
+                const decrypted = await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: iv }, key, data
+                );
+
+                return new TextDecoder().decode(decrypted);
+            } catch (e) {
+                throw new Error("Decryption failed. Wrong password?");
+            }
+        }
+
+        // --- METHOD 1: LSB STEGANOGRAPHY ---
+
+        async function lsbHide() {
+            const fileInput = document.getElementById('lsb-input-file');
+            const text = document.getElementById('lsb-secret-text').value;
+            const password = document.getElementById('lsb-pass-enc').value;
+            const canvas = document.getElementById('lsb-canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (!fileInput.files[0] || !text) {
+                alert("Please select an image and enter text.");
+                return;
+            }
+
+            try {
+                // 1. Prepare Data
+                const processedText = password ? await encryptData(text, password) : text;
+                // Add header length for reading back: 32 chars padded with 0 (e.g., "0000...012")
+                const binaryText = toBinary(processedText);
+                const lengthHeader = toBinary(processedText.length.toString().padStart(16, '0'));
+                const fullBits = lengthHeader + binaryText;
+
+                // 2. Load Image
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+
+                    if (fullBits.length > data.length / 4 * 3) {
+                        alert("Text is too long for this image size.");
+                        return;
+                    }
+
+                    // 3. Embed Bits
+                    let bitIdx = 0;
+                    for (let i = 0; i < data.length; i += 4) {
+                        if (bitIdx >= fullBits.length) break;
+                        // Modify R, G, B channels
+                        for (let j = 0; j < 3; j++) {
+                            if (bitIdx < fullBits.length) {
+                                // Clear LSB and set new bit
+                                data[i + j] = (data[i + j] & 0xFE) | parseInt(fullBits[bitIdx]);
+                                bitIdx++;
+                            }
+                        }
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+
+                    // 4. Output
+                    const container = document.getElementById('lsb-output-container');
+                    container.classList.remove('hidden');
+                    const link = document.getElementById('lsb-download-link');
+                    link.href = canvas.toDataURL("image/png");
+                    link.download = "stego_secured.png";
+                };
+                img.src = URL.createObjectURL(fileInput.files[0]);
+
+            } catch (e) {
+                alert("Error: " + e.message);
+                console.error(e);
+            }
+        }
+
+        async function lsbReveal() {
+            const fileInput = document.getElementById('lsb-decode-file');
+            const password = document.getElementById('lsb-pass-dec').value;
+            const resultDiv = document.getElementById('lsb-result');
+
+            if (!fileInput.files[0]) return;
+
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+                // 1. Extract bits
+                let extractedBits = "";
+                // Extract enough to read header (16 chars * 8 bits = 128 bits)
+                for (let i = 0; i < data.length; i += 4) {
+                    for (let j = 0; j < 3; j++) {
+                        extractedBits += (data[i + j] & 1).toString();
+                    }
+                }
+
+                // 2. Parse Length Header
+                const headerBits = extractedBits.substring(0, 16 * 8);
+                const lengthStr = binaryToString(headerBits);
+                const msgLength = parseInt(lengthStr);
+
+                if (isNaN(msgLength) || msgLength <= 0 || msgLength > 10000000) {
+                    resultDiv.innerText = "No readable hidden data found or file corrupted.";
+                    resultDiv.classList.remove('hidden', 'text-green-400');
+                    resultDiv.classList.add('text-red-400');
+                    return;
+                }
+
+                // 3. Extract Message
+                const msgBits = extractedBits.substring(16 * 8, 16 * 8 + (msgLength * 8));
+                let rawMsg = binaryToString(msgBits);
+
+                // 4. Decrypt
+                try {
+                    const finalMsg = await decryptData(rawMsg, password);
+                    resultDiv.innerText = finalMsg;
+                    resultDiv.classList.remove('hidden', 'text-red-400');
+                    resultDiv.classList.add('text-green-400');
+                } catch (e) {
+                    resultDiv.innerText = "Decryption Failed: Incorrect Password.";
+                    resultDiv.classList.remove('hidden', 'text-green-400');
+                    resultDiv.classList.add('text-red-400');
+                }
+            };
+            img.src = URL.createObjectURL(fileInput.files[0]);
+        }
+
+        function toBinary(str) {
+            let result = "";
+            for (let i = 0; i < str.length; i++) {
+                result += str.charCodeAt(i).toString(2).padStart(8, '0');
+            }
+            return result;
+        }
+
+        function binaryToString(bin) {
+            let result = "";
+            for (let i = 0; i < bin.length; i += 8) {
+                result += String.fromCharCode(parseInt(bin.substr(i, 8), 2));
+            }
+            return result;
+        }
+
+        // --- METHOD 2: BINARY APPEND ---
+
+        async function appendHide() {
+            const fileInput = document.getElementById('append-input-file');
+            const text = document.getElementById('append-text').value;
+            const password = document.getElementById('append-pass').value;
+
+            if (!fileInput.files[0] || !text) {
+                alert("File and text required.");
+                return;
+            }
+
+            try {
+                // Encrypt payload
+                const processedText = password ? await encryptData(text, password) : text;
+                // Construct payload: Magic String + Processed Text
+                const payload = MAGIC_STRING + processedText;
+
+                const originalFile = fileInput.files[0];
+                const newBlob = new Blob([originalFile, payload], { type: originalFile.type });
+
+                const url = URL.createObjectURL(newBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = "carrier_" + originalFile.name;
+                link.click();
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        }
+
+        async function appendReveal() {
+            const fileInput = document.getElementById('append-extract-file');
+            const password = document.getElementById('append-extract-pass').value;
+            const resultDiv = document.getElementById('append-result');
+
+            if (!fileInput.files[0]) return;
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                const content = e.target.result; // Binary string
+                const index = content.lastIndexOf(MAGIC_STRING);
+
+                if (index === -1) {
+                    resultDiv.innerText = "No hidden data found in this file.";
+                    resultDiv.classList.remove('hidden', 'text-green-400');
+                    resultDiv.classList.add('text-red-400');
+                    return;
+                }
+
+                const rawData = content.substring(index + MAGIC_STRING.length);
+
+                try {
+                    const finalMsg = await decryptData(rawData, password);
+                    resultDiv.innerText = finalMsg;
+                    resultDiv.classList.remove('hidden', 'text-red-400');
+                    resultDiv.classList.add('text-green-400');
+                } catch (e) {
+                    resultDiv.innerText = "Decryption Failed: Incorrect Password.";
+                    resultDiv.classList.remove('hidden', 'text-green-400');
+                    resultDiv.classList.add('text-red-400');
+                }
+            };
+            // Read as binary string to find magic string easily
+            reader.readAsBinaryString(fileInput.files[0]);
+        }
+
+        // --- METHOD 3: DETECTOR ---
+
+        function runDetection(input) {
+            const resultDiv = document.getElementById('detect-result');
+            const file = input.files[0];
+
+            if (!file) return;
+
+            resultDiv.classList.remove('hidden', 'bg-red-900/50', 'bg-green-900/50', 'border-red-500', 'border-green-500');
+            resultDiv.innerHTML = '<i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto text-blue-400"></i><p class="mt-2 text-blue-300">Scanning File Structure...</p>';
+            resultDiv.classList.remove('hidden');
+
+            // Re-run icons in case they were injected dynamically
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            setTimeout(() => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const content = e.target.result;
+                    const found = content.includes(MAGIC_STRING);
+
+                    resultDiv.innerHTML = ""; // Clear loader
+
+                    if (found) {
+                        resultDiv.className = "mt-6 p-6 rounded-lg bg-red-900/20 border border-red-500 text-center";
+                        resultDiv.innerHTML = `
+                            <div class="inline-flex bg-red-900 p-3 rounded-full mb-3">
+                                <i data-lucide="siren" class="w-8 h-8 text-red-500"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-red-500">POSITIVE DETECTION</h3>
+                            <p class="text-red-300 mt-2 text-sm">
+                                Artifacts of the "High Capacity" steganography method were found in this file.
+                                <br>The file contains hidden text data at the end of the byte stream.
+                            </p>
+                        `;
+                    } else {
+                        resultDiv.className = "mt-6 p-6 rounded-lg bg-green-900/20 border border-green-500 text-center";
+                        resultDiv.innerHTML = `
+                            <div class="inline-flex bg-green-900 p-3 rounded-full mb-3">
+                                <i data-lucide="shield-check" class="w-8 h-8 text-green-500"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-green-500">NEGATIVE</h3>
+                            <p class="text-green-300 mt-2 text-sm">
+                                No "High Capacity" signatures detected.
+                                <br><span class="text-slate-400 text-xs">(Note: LSB Steganography cannot be detected by this scan)</span>
+                            </p>
+                        `;
+                    }
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                };
+                // Read as binary string to search for signature
+                reader.readAsBinaryString(file);
+            }, 1500); // Fake scan delay for UX
+        }
+
+    </script>
+</body>
+
+</html>

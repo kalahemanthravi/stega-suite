@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronos | Real IBE Time Vault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+
+        :root {
+            --neon-green: #00ff9d;
+            --neon-blue: #00ccff;
+            --neon-purple: #bd00ff;
+            --dark-bg: #0a0a0a;
+            --panel-bg: #111111;
+            --border: #333;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-panel {
+            background: rgba(17, 17, 17, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+        }
+
+        .step-line {
+            position: absolute;
+            left: 20px;
+            top: 40px;
+            bottom: 0;
+            width: 2px;
+            background: #333;
+            z-index: 0;
+        }
+        
+        .tab-active {
+            border-bottom: 2px solid var(--neon-purple);
+            color: var(--neon-purple);
+        }
+        
+        .tab-inactive {
+            border-bottom: 2px solid transparent;
+            color: #666;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <!-- Header -->
+    <header class="border-b border-gray-800 bg-black/50 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <i data-lucide="clock" class="w-8 h-8 text-purple-400"></i>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tighter">CHRONOS <span class="text-xs font-normal text-gray-500 ml-2 border border-gray-700 px-2 py-0.5 rounded">V5.0.0 (Real IBE)</span></h1>
+                    <p class="text-xs text-gray-400">Cryptographic Time-Lock (BLS12-381)</p>
+                </div>
+            </div>
+            
+            <!-- Network Status -->
+            <div class="flex items-center gap-4 bg-gray-900 rounded-lg p-2 border border-gray-800">
+                <div class="flex items-center gap-2 px-2">
+                    <div id="pulse-dot" class="w-2 h-2 rounded-full bg-gray-600"></div>
+                    <span id="current-round" class="text-xs mono font-bold text-emerald-400">CONNECTING...</span>
+                </div>
+                <div class="h-4 w-[1px] bg-gray-700"></div>
+                <span class="text-[10px] text-gray-500 mono">MAINNET (30s)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl mx-auto w-full p-4 grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4 pb-20">
+
+        <!-- LEFT PANEL: Operations -->
+        <div class="glass-panel rounded-xl p-6 shadow-2xl flex flex-col h-fit relative overflow-hidden">
+            <!-- Background Decoration -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Tabs -->
+            <div class="flex gap-6 mb-8 border-b border-gray-800 z-10">
+                <button onclick="switchTab('encrypt')" id="tab-encrypt" class="pb-3 px-2 font-bold tracking-wider transition-all tab-active flex items-center gap-2">
+                    <i data-lucide="lock" class="w-4 h-4"></i> ENCRYPT
+                </button>
+                <button onclick="switchTab('decrypt')" id="tab-decrypt" class="pb-3 px-2 font-bold tracking-wider transition-all tab-inactive flex items-center gap-2">
+                    <i data-lucide="unlock" class="w-4 h-4"></i> DECRYPT
+                </button>
+            </div>
+
+            <!-- ENCRYPT VIEW -->
+            <div id="view-encrypt" class="space-y-6 z-10">
+                <!-- Step 1: File -->
+                <div class="relative pl-12">
+                    <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-sm z-10 text-purple-400">1</div>
+                    <div class="step-line"></div>
+                    <label class="block text-sm font-semibold text-gray-400 mb-2">SELECT ARTIFACT</label>
+                    <div class="border-2 border-dashed border-gray-700 rounded-lg p-6 hover:border-purple-500/50 transition-colors cursor-pointer text-center group bg-black/20" id="drop-zone">
+                        <input type="file" id="file-input" class="hidden">
+                        <i data-lucide="upload-cloud" class="w-8 h-8 text-gray-600 mx-auto mb-2 group-hover:text-purple-400 transition-colors"></i>
+                        <p class="text-sm text-gray-500" id="file-name">Drop file or click to browse</p>
+                    </div>
+                </div>
+
+                <!-- Step 2: Time -->
+                <div class="relative pl-12">
+                    <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-sm z-10 text-purple-400">2</div>
+                    <div class="step-line"></div>
+                    <label class="block text-sm font-semibold text-gray-400 mb-2">UNLOCK DATE (UTC)</label>
+                    <input type="datetime-local" id="release-time" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500 transition-colors mono">
+                    
+                    <div class="mt-3 bg-gray-900/50 rounded p-3 border border-gray-800">
+                        <div class="flex justify-between text-xs mono mb-1">
+                            <span class="text-gray-500">Target Round:</span>
+                            <span id="target-round-calc" class="text-purple-500 font-bold">---</span>
+                        </div>
+                        <div class="flex justify-between text-xs mono">
+                            <span class="text-gray-500">Duration:</span>
+                            <span id="time-remaining" class="text-gray-300">---</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Hybrid Architecture -->
+                <div class="relative pl-12">
+                    <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-sm z-10 text-purple-400">3</div>
+                    <label class="block text-sm font-semibold text-gray-400 mb-2">HYBRID ENCRYPTION</label>
+                    <div class="bg-black border border-gray-700 rounded-lg p-3 text-xs mono text-gray-500 break-all">
+                        <div class="mb-2">1. File encrypted with ephemeral <span class="text-emerald-400">AES-GCM Key</span>.</div>
+                        <div>2. AES Key encrypted with <span class="text-purple-400">Drand Mainnet Public Key</span> + Round #.</div>
+                    </div>
+                </div>
+
+                <!-- Terms Checkbox (Encrypt) -->
+                <div class="flex items-start gap-3 pt-2 bg-gray-900/30 p-3 rounded border border-gray-800">
+                    <input type="checkbox" id="check-encrypt" class="mt-1 w-4 h-4 rounded border-gray-700 bg-gray-900 text-purple-500 focus:ring-purple-900 focus:ring-offset-gray-900 cursor-pointer">
+                    <label for="check-encrypt" class="text-xs text-gray-400 cursor-pointer select-none">
+                        I agree to the <button onclick="toggleLegalModal()" class="text-purple-500 hover:underline">Terms & Security Model</button>. I understand the AES key will be cryptographically inaccessible until the round date.
+                    </label>
+                </div>
+
+                <!-- Action -->
+                <div class="pt-2">
+                    <button id="btn-encrypt" onclick="window.performEncryption()" disabled class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 rounded-lg shadow-lg shadow-purple-900/20 transition-all active:scale-95 flex justify-center items-center gap-2 opacity-50 cursor-not-allowed">
+                        <i data-lucide="lock" class="w-5 h-5"></i> ENCRYPT (REAL IBE)
+                    </button>
+                    <p class="text-center text-xs text-gray-600 mt-3 flex items-center justify-center gap-2">
+                        <i data-lucide="zap" class="w-3 h-3"></i> Powered by tlock-js & Drand Mainnet
+                    </p>
+                </div>
+            </div>
+
+            <!-- DECRYPT VIEW -->
+            <div id="view-decrypt" class="space-y-6 hidden z-10">
+                 <!-- Step 1: Vault File -->
+                 <div class="relative pl-12">
+                    <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-sm z-10 text-blue-400">1</div>
+                    <div class="step-line"></div>
+                    <label class="block text-sm font-semibold text-gray-400 mb-2">UPLOAD SECURE VAULT</label>
+                    <div class="border-2 border-dashed border-gray-700 rounded-lg p-6 hover:border-blue-500/50 transition-colors cursor-pointer text-center group bg-black/20" onclick="document.getElementById('vault-input').click()">
+                        <input type="file" id="vault-input" class="hidden" accept=".json">
+                        <i data-lucide="file-lock" class="w-8 h-8 text-gray-600 mx-auto mb-2 group-hover:text-blue-400 transition-colors"></i>
+                        <p class="text-sm text-gray-500" id="vault-name">Select .locked.json file</p>
+                    </div>
+                </div>
+
+                <!-- Step 2: Beacon Verification -->
+                <div class="relative pl-12">
+                    <div class="absolute left-0 top-0 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-sm z-10 text-blue-400">2</div>
+                    <label class="block text-sm font-semibold text-gray-400 mb-2">NETWORK UNLOCK</label>
+                    <div class="bg-black border border-gray-700 rounded-lg p-3 text-xs mono text-gray-500">
+                        Status: <span id="verify-status" class="text-yellow-500">WAITING FOR FILE...</span><br>
+                        Required Round: <span id="verify-round">---</span>
+                    </div>
+                    <p class="text-[10px] text-gray-500 mt-2">
+                        Software will fetch the Beacon Signature from Drand. If the signature is not published yet, mathematical decryption is impossible.
+                    </p>
+                </div>
+
+                <!-- Terms Checkbox (Decrypt) -->
+                <div class="flex items-start gap-3 pt-2 bg-gray-900/30 p-3 rounded border border-gray-800">
+                    <input type="checkbox" id="check-decrypt" class="mt-1 w-4 h-4 rounded border-gray-700 bg-gray-900 text-blue-500 focus:ring-blue-900 focus:ring-offset-gray-900 cursor-pointer">
+                    <label for="check-decrypt" class="text-xs text-gray-400 cursor-pointer select-none">
+                        I agree to the <button onclick="toggleLegalModal()" class="text-blue-500 hover:underline">Terms & Conditions</button>. I accept full responsibility for data security.
+                    </label>
+                </div>
+
+                <!-- Action -->
+                <div class="pt-2">
+                    <button id="btn-decrypt" onclick="window.performDecryption()" disabled class="w-full bg-blue-600 hover:bg-blue-500 text-black font-bold py-4 rounded-lg shadow-lg shadow-blue-900/20 transition-all active:scale-95 flex justify-center items-center gap-2 opacity-50 cursor-not-allowed">
+                        <i data-lucide="unlock" class="w-5 h-5"></i> FETCH BEACON & DECRYPT
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Visualization & Logs -->
+        <div class="flex flex-col gap-4 h-full">
+            <!-- Integrity Monitor -->
+            <div class="glass-panel rounded-xl p-0 flex-1 flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-gray-800 bg-black/40 flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="terminal" class="w-4 h-4"></i> System Log
+                    </h2>
+                    <div class="flex gap-2">
+                        <span class="text-[10px] px-2 py-1 bg-gray-800 rounded text-gray-500 font-mono">tlock-js</span>
+                        <span class="text-[10px] px-2 py-1 bg-gray-800 rounded text-gray-500 font-mono">BLS12-381</span>
+                    </div>
+                </div>
+                
+                <!-- Terminal Output -->
+                <div class="flex-1 bg-black p-4 overflow-hidden relative">
+                    <div id="console-output" class="absolute inset-4 overflow-y-auto text-xs mono space-y-2 pb-2">
+                        <div class="text-gray-500 border-l-2 border-gray-700 pl-2">
+                            Initializing Chronos v5.0.0...<br>
+                            Mode: Real Identity-Based Encryption (tlock-js)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chain Info Card -->
+            <div class="glass-panel rounded-xl p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center">
+                        <i data-lucide="link" class="w-4 h-4 text-blue-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-300">CHAIN INFO</h3>
+                        <p class="text-[10px] text-gray-500" id="chain-name-display">Drand Mainnet</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[10px] mono text-gray-400">
+                    <div class="bg-black/30 p-2 rounded border border-gray-800">
+                        <span class="block text-gray-600">PERIOD</span>
+                        <span id="info-period" class="text-emerald-400">...</span>
+                    </div>
+                    <div class="bg-black/30 p-2 rounded border border-gray-800">
+                        <span class="block text-gray-600">GENESIS</span>
+                        <span id="info-genesis">...</span>
+                    </div>
+                    <div class="bg-black/30 p-2 rounded border border-gray-800 col-span-2 truncate">
+                        <span class="block text-gray-600">CHAIN HASH</span>
+                        <span id="info-hash">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+    
+    <!-- Footer with Legal -->
+    <footer class="border-t border-gray-800 bg-black text-center py-4 mt-auto">
+        <button onclick="toggleLegalModal()" class="text-xs text-gray-500 hover:text-gray-300 underline">
+            Legal Disclaimer & Security Model
+        </button>
+        <p class="text-[10px] text-gray-700 mt-1">© 2026 Chronos Vault</p>
+    </footer>
+
+    <!-- Legal Modal -->
+    <div id="legal-modal" class="fixed inset-0 z-[100] hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 modal-backdrop" onclick="toggleLegalModal()"></div>
+        
+        <!-- Content -->
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-[#111] border border-red-900/50 rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-red-900/10">
+                    <h3 class="text-lg font-bold text-red-400 flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i> DISCLAIMER
+                    </h3>
+                    <button onclick="toggleLegalModal()" class="text-gray-400 hover:text-white">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <div class="p-6 text-sm text-gray-300 space-y-4 leading-relaxed">
+                    
+                    <!-- SECURITY NOTICE -->
+                    <div class="bg-purple-900/20 p-4 rounded border border-purple-800/50">
+                        <h4 class="font-bold text-purple-400 mb-2 text-xs uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="shield-check" class="w-3 h-3"></i> Cryptographic Time-Lock (Real)
+                        </h4>
+                        <p class="text-xs text-gray-300">
+                            This application uses <strong>Identity-Based Encryption (BLS12-381)</strong> via the <code>tlock-js</code> library.
+                        </p>
+                        <ul class="list-disc list-inside text-xs text-gray-400 mt-2 space-y-1">
+                            <li><strong>Impossible to Cheat:</strong> The decryption key requires a future signature from Drand. This signature does not exist yet.</li>
+                            <li><strong>No Password:</strong> Security relies entirely on the Drand network.</li>
+                            <li><strong>Network Required:</strong> You MUST have an internet connection to decrypt (to fetch the signature).</li>
+                        </ul>
+                    </div>
+
+                    <!-- LEGAL -->
+                    <div class="bg-black/50 p-4 rounded border border-gray-800">
+                        <h4 class="font-bold text-red-400 mb-2 text-xs uppercase tracking-wider">Terms of Service</h4>
+                        <p class="text-xs text-gray-400">
+                            By using this software, you agree that the developers are <span class="text-white font-bold">NOT RESPONSIBLE</span> for:
+                        </p>
+                        <ul class="list-disc list-inside text-xs text-gray-400 mt-2 space-y-1">
+                            <li>Data loss if Drand network shuts down.</li>
+                            <li>Inability to decrypt due to network censorship or API failure.</li>
+                        </ul>
+                    </div>
+
+                    <button onclick="toggleLegalModal()" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded transition-colors">
+                        I UNDERSTAND & AGREE
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODULE SCRIPT: The Real Logic -->
+    <script type="module">
+        // Import official libraries from ESM CDN
+        import { timelockEncrypt, timelockDecrypt } from 'https://esm.sh/tlock-js@latest';
+        import { HttpChainClient, HttpCachingChainClient } from 'https://esm.sh/drand-client@latest';
+
+        // --- CONSTANTS & CONFIG ---
+        const CHAIN_CONFIG = {
+            // Mainnet Config (Drand)
+            chainHash: "8990e7a9aaed2ffed73dbd7092123d6f76346bbe11961511427b6db0e17f2a57",
+            publicKey: "868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31",
+            genesis: 1595431050,
+            period: 30,
+            // Endpoints (CORS Friendly prioritized)
+            endpoints: [
+                "https://drand.cloudflare.com",
+                "https://api.drand.sh"
+            ]
+        };
+
+        // --- EXPOSE TO WINDOW (Since this is a module) ---
+        window.performEncryption = performEncryption;
+        window.performDecryption = performDecryption;
+        window.initNetwork = initNetwork;
+
+        // State
+        let currentRound = 0;
+        let selectedFile = null;
+        let selectedVault = null;
+        let networkInterval = null;
+
+        // --- INITIALIZATION ---
+        lucide.createIcons();
+        initNetwork();
+
+        async function initNetwork() {
+            log("Configuring Network...", "info");
+            
+            document.getElementById('chain-name-display').innerText = "Drand Mainnet";
+            document.getElementById('info-hash').innerText = CHAIN_CONFIG.chainHash.substring(0, 20) + "...";
+            document.getElementById('info-period').innerText = `${CHAIN_CONFIG.period}s`;
+            document.getElementById('info-genesis').innerText = new Date(CHAIN_CONFIG.genesis * 1000).toLocaleDateString();
+            
+            fetchDrandStatus();
+            networkInterval = setInterval(fetchDrandStatus, 15000); 
+            updateTargetRoundCalc();
+        }
+
+        async function fetchDrandStatus() {
+            // We use standard fetch for simple status checks, tlock-js handles the heavy lifting later
+            for (const url of CHAIN_CONFIG.endpoints) {
+                try {
+                    const res = await fetch(`${url}/${CHAIN_CONFIG.chainHash}/public/latest`);
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if(data.round) {
+                        currentRound = data.round;
+                        updateNetworkUI(true, currentRound);
+                        return;
+                    }
+                } catch(e) {}
+            }
+            updateNetworkUI(false);
+            log("Warning: Could not fetch latest round status.", "warn");
+        }
+
+        // --- HYBRID ENCRYPTION (The Real Implementation) ---
+        async function performEncryption() {
+            if (!selectedFile) return log("Error: Select a file first.", "error");
+            const timeVal = document.getElementById('release-time').value;
+            if (!timeVal) return log("Error: Set an unlock date.", "error");
+
+            log("Starting Hybrid Encryption...", "crypto");
+
+            try {
+                // 1. Calculate Round
+                const targetDate = new Date(timeVal);
+                const targetSeconds = Math.floor(targetDate.getTime() / 1000);
+                const targetRound = Math.floor((targetSeconds - CHAIN_CONFIG.genesis) / CHAIN_CONFIG.period);
+
+                if (targetRound < currentRound && currentRound > 0) log("Warning: Target date is in the past.", "warn");
+                if (targetRound <= 0) return log("Error: Invalid date.", "error");
+
+                log(`Targeting Drand Round: #${targetRound}`, "info");
+
+                // 2. Generate Ephemeral AES Key
+                const aesKey = await window.crypto.subtle.generateKey(
+                    { name: "AES-GCM", length: 256 },
+                    true,
+                    ["encrypt", "decrypt"]
+                );
+                
+                // Export AES Key to raw bytes for wrapping
+                const rawKey = await window.crypto.subtle.exportKey("raw", aesKey);
+                const keyBuffer = new Uint8Array(rawKey); // This is what we IBE encrypt
+
+                // 3. Encrypt the FILE with AES Key
+                const fileBuffer = await selectedFile.arrayBuffer();
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                const aesCiphertext = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    aesKey,
+                    fileBuffer
+                );
+
+                // 4. Encrypt the KEY with tlock (IBE)
+                // This uses BLS12-381 to encrypt the 'keyBuffer' against 'targetRound'
+                log("Encrypting Key with tlock (IBE)...", "crypto");
+                
+                // Note: tlock-js expects a client or chain info. 
+                // We configure the client to use our endpoints.
+                const client = new HttpChainClient(new HttpCachingChainClient(CHAIN_CONFIG.endpoints[0], CHAIN_CONFIG.chainHash));
+                
+                const tlockCapsule = await timelockEncrypt(
+                    targetRound, 
+                    keyBuffer, 
+                    client 
+                );
+
+                // 5. Package
+                // Convert tlockCapsule (string/base64 usually) to store in JSON
+                const package = {
+                    header: {
+                        filename: selectedFile.name,
+                        round: targetRound,
+                        algo: "HYBRID-AES-GCM-TLOCK",
+                        chain_hash: CHAIN_CONFIG.chainHash
+                    },
+                    iv: Array.from(iv),
+                    tlock_capsule: tlockCapsule, // The encrypted key
+                    ciphertext: Array.from(new Uint8Array(aesCiphertext)) // The encrypted file
+                };
+
+                const blob = new Blob([JSON.stringify(package, null, 2)], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${selectedFile.name}.locked.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                log("SUCCESS: File encrypted. Key is time-locked.", "success");
+
+            } catch (err) {
+                log(`Encryption Error: ${err.message}`, "error");
+                console.error(err);
+            }
+        }
+
+        // --- DECRYPTION ---
+        async function performDecryption() {
+            if (!selectedVault) return log("No vault file selected.", "error");
+
+            log("Reading Vault...", "crypto");
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const package = JSON.parse(e.target.result);
+                    const targetRound = package.header.round;
+
+                    log(`Target Round: #${targetRound}`, "info");
+
+                    // 1. Recover AES Key using tlock (IBE)
+                    // This is where the magic happens. timelockDecrypt will internally
+                    // fetch the beacon signature from the network. 
+                    // If the beacon doesn't exist (future), this PROMISE REJECTS.
+                    log("Attempting IBE Unlock (Fetching Beacon)...", "crypto");
+
+                    const client = new HttpChainClient(new HttpCachingChainClient(CHAIN_CONFIG.endpoints[0], CHAIN_CONFIG.chainHash));
+
+                    let keyBuffer;
+                    try {
+                        keyBuffer = await timelockDecrypt(
+                            package.tlock_capsule,
+                            client
+                        );
+                    } catch (tlockErr) {
+                        log("TLOCK DECRYPTION FAILED.", "error");
+                        if (tlockErr.message.includes("404") || tlockErr.message.includes("future")) {
+                            log("REASON: Round not yet produced by Drand.", "warn");
+                            log("You cannot cheat math. Please wait.", "warn");
+                        } else {
+                            log(`Reason: ${tlockErr.message}`, "error");
+                        }
+                        return;
+                    }
+
+                    log("Key Recovered! Decrypting File...", "success");
+
+                    // 2. Import Recovered AES Key
+                    const aesKey = await window.crypto.subtle.importKey(
+                        "raw", 
+                        keyBuffer, 
+                        "AES-GCM", 
+                        false, 
+                        ["decrypt"]
+                    );
+
+                    // 3. Decrypt File
+                    const iv = new Uint8Array(package.iv);
+                    const ciphertext = new Uint8Array(package.ciphertext);
+
+                    const decryptedBuffer = await window.crypto.subtle.decrypt(
+                        { name: "AES-GCM", iv: iv },
+                        aesKey,
+                        ciphertext
+                    );
+
+                    // 4. Download
+                    const blob = new Blob([decryptedBuffer]);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = package.header.filename || "unlocked_file";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    log("File Decrypted Successfully.", "success");
+
+                } catch (err) {
+                    log(`Error: ${err.message}`, "error");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(selectedVault);
+        }
+
+        // --- HELPERS ---
+        function updateNetworkUI(online, round) {
+            const statusEl = document.getElementById('current-round');
+            const dotEl = document.getElementById('pulse-dot');
+            if (online) {
+                statusEl.innerText = `#${round}`;
+                statusEl.className = "text-xs mono font-bold text-emerald-400";
+                dotEl.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+            } else {
+                statusEl.innerText = "OFFLINE";
+                statusEl.className = "text-xs mono font-bold text-red-500";
+                dotEl.className = "w-2 h-2 rounded-full bg-red-500";
+            }
+        }
+
+        window.toggleLegalModal = function() {
+            const modal = document.getElementById('legal-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // --- FILE HANDLING ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+        
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-purple-500'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-purple-500');
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('border-purple-500'); handleFileSelect(e.dataTransfer.files[0]); });
+    
+        function handleFileSelect(file) {
+            if (!file) return;
+            selectedFile = file;
+            document.getElementById('file-name').innerText = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+            log(`Loaded artifact: ${file.name}`);
+        }
+        
+        document.getElementById('vault-input').addEventListener('change', (e) => {
+            if(e.target.files[0]) {
+                selectedVault = e.target.files[0];
+                document.getElementById('vault-name').innerText = selectedVault.name;
+                
+                // Peek
+                const r = new FileReader();
+                r.onload = (ev) => {
+                     try {
+                        const p = JSON.parse(ev.target.result);
+                        if(p.header && p.header.round) {
+                            document.getElementById('verify-round').innerText = `#${p.header.round}`;
+                            document.getElementById('verify-status').innerText = "READY";
+                            document.getElementById('verify-status').className = "text-blue-400 font-bold";
+                        }
+                     } catch(e){}
+                };
+                r.readAsText(selectedVault);
+            }
+        });
+
+        // --- TIME CALCS ---
+        document.getElementById('release-time').addEventListener('input', updateTargetRoundCalc);
+        function updateTargetRoundCalc() {
+            const timeVal = document.getElementById('release-time').value;
+            if (!timeVal) return;
+            const targetDate = new Date(timeVal);
+            const targetSeconds = Math.floor(targetDate.getTime() / 1000);
+            const calculatedRound = Math.floor((targetSeconds - CHAIN_CONFIG.genesis) / CHAIN_CONFIG.period);
+            document.getElementById('target-round-calc').innerText = `#${calculatedRound}`;
+            
+            const now = Math.floor(Date.now() / 1000);
+            const diff = targetSeconds - now;
+            if(diff > 0) {
+                 const d = Math.floor(diff / 86400);
+                 const h = Math.floor((diff % 86400) / 3600);
+                 document.getElementById('time-remaining').innerText = `${d}d ${h}h`;
+            } else {
+                 document.getElementById('time-remaining').innerText = "Immediate";
+            }
+        }
+        
+        function log(msg, type = 'info') {
+            const consoleEl = document.getElementById('console-output');
+            const line = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString().split(' ')[0];
+            let colorClass = "text-gray-400 border-l-2 border-gray-800 pl-2";
+            if (type === 'success') colorClass = "text-emerald-400 border-l-2 border-emerald-500/50 pl-2 bg-emerald-900/10 p-1";
+            if (type === 'error') colorClass = "text-red-400 border-l-2 border-red-500/50 pl-2 bg-red-900/10 p-1";
+            if (type === 'warn') colorClass = "text-yellow-400 border-l-2 border-yellow-500/50 pl-2";
+            if (type === 'crypto') colorClass = "text-purple-400 border-l-2 border-purple-500/50 pl-2 font-bold";
+            line.className = `${colorClass} text-[11px] font-mono break-all flex`;
+            const timeSpan = document.createElement('span');
+            timeSpan.className = "opacity-50 mr-2 flex-shrink-0";
+            timeSpan.textContent = `[${timestamp}]`;
+            const msgSpan = document.createElement('span');
+            msgSpan.textContent = msg; 
+            line.appendChild(timeSpan);
+            line.appendChild(msgSpan);
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        window.switchTab = function(tab) {
+            document.getElementById('view-encrypt').classList.add('hidden');
+            document.getElementById('view-decrypt').classList.add('hidden');
+            document.getElementById('tab-encrypt').classList.replace('tab-active', 'tab-inactive');
+            document.getElementById('tab-decrypt').classList.replace('tab-active', 'tab-inactive');
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.replace('tab-inactive', 'tab-active');
+            document.getElementById('tab-encrypt').classList.remove('text-purple-400');
+            document.getElementById('tab-decrypt').classList.remove('text-blue-400');
+            if(tab === 'encrypt') document.getElementById('tab-encrypt').classList.add('text-purple-400');
+            if(tab === 'decrypt') document.getElementById('tab-decrypt').classList.add('text-blue-400');
+        }
+
+        // --- AGREEMENT HANDLERS ---
+        document.getElementById('check-encrypt').addEventListener('change', function(e) {
+            const btn = document.getElementById('btn-encrypt');
+            if(e.target.checked) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        document.getElementById('check-decrypt').addEventListener('change', function(e) {
+            const btn = document.getElementById('btn-decrypt');
+            if(e.target.checked) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        });
+    </script>
+</body>
+</html>

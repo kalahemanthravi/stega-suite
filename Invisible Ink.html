@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invisible Ink - Stega Suite</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            /* Changed from Purple to Cyan/Blue for distinction */
+            --primary: #06b6d4;
+            --primary-hover: #0891b2;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: var(--bg-card);
+            padding: 0.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.2);
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .input-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        textarea,
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .action-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Result Area */
+        .result-area {
+            margin-top: 2rem;
+            border-top: 1px solid var(--border);
+            padding-top: 2rem;
+            display: none;
+        }
+
+        .result-area.visible {
+            display: block;
+        }
+
+        .result-box {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            position: relative;
+            word-break: break-all;
+            margin-top: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .stat-item {
+            background: var(--bg-dark);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-top: 0.2rem;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            display: none;
+            justify-content: center; align-items: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            width: 100%; max-width: 600px;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            max-height: 80vh;
+            display: flex; flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .modal-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            color: var(--primary);
+            margin: 1.5rem 0 0.5rem 0;
+        }
+
+        .modal-content h3:first-child { margin-top: 0; }
+        .modal-content p, .modal-content ul { margin-bottom: 1rem; color: var(--text-muted); }
+        .modal-content ul { padding-left: 1.5rem; }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: auto;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .footer-links button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.875rem;
+        }
+
+        .footer-links button:hover {
+            color: var(--primary);
+        }
+
+        /* Error state */
+        .error-msg {
+            color: var(--error);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+            padding: 0.75rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 0.5rem;
+            border: 1px solid var(--error);
+        }
+
+        @media (max-width: 640px) {
+            .brand span {
+                display: none;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <i data-lucide="ghost" color="#06b6d4"></i>
+            Stega Suite <span>Invisible Ink</span>
+        </div>
+        <div style="font-size: 0.875rem; color: var(--text-muted);">
+            v1.0.0
+        </div>
+    </header>
+
+    <main>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('hide')" id="tab-hide">
+                <i data-lucide="eye-off"></i> Hide Message
+            </button>
+            <button class="tab-btn" onclick="switchTab('reveal')" id="tab-reveal">
+                <i data-lucide="eye"></i> Reveal Message
+            </button>
+        </div>
+
+        <div class="card">
+            
+            <!-- HIDE TAB INPUTS -->
+            <div id="hide-inputs">
+                <div class="form-group">
+                    <label>Secret Message</label>
+                    <textarea id="secret-text" placeholder="The hidden password or message..."></textarea>
+                    <span class="input-hint">This text will be invisible.</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Cover Text</label>
+                    <textarea id="cover-text" placeholder="e.g. Meeting at 5 PM in the lobby."></textarea>
+                    <span class="input-hint">This is the public text others will see.</span>
+                </div>
+            </div>
+
+            <!-- REVEAL TAB INPUTS -->
+            <div id="reveal-inputs" style="display: none;">
+                <div class="form-group">
+                    <label>Text with Hidden Message</label>
+                    <textarea id="stega-text" placeholder="Paste the text containing invisible ink here..."></textarea>
+                </div>
+            </div>
+
+            <!-- SHARED: PASSWORD -->
+            <div class="form-group">
+                <label>Security Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" placeholder="Password to lock/unlock the secret">
+                    <button class="toggle-password" onclick="togglePassword()">
+                        <i data-lucide="eye" id="eye-icon"></i>
+                    </button>
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    <i data-lucide="shield" style="width: 12px; height: 12px; display:inline;"></i>
+                    AES-256 Encryption protects the hidden layer.
+                </p>
+            </div>
+
+            <!-- Terms Checkbox -->
+            <div class="form-group" style="display: flex; align-items: flex-start; gap: 0.75rem; background: rgba(15, 23, 42, 0.5); padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                <input type="checkbox" id="terms-check" style="width: 20px; height: 20px; margin-top: 0.1rem; cursor: pointer;">
+                <label for="terms-check" style="font-size: 0.8rem; line-height: 1.4; margin: 0; cursor: pointer;">
+                    I accept the <strong onclick="openModal('terms')" style="cursor:pointer; text-decoration:underline; color: var(--primary);">Terms & Conditions</strong>. I acknowledge that use of this tool is entirely at my own risk and that the developers assume <strong>NO LIABILITY</strong> for data loss or security breaches.
+                </label>
+            </div>
+
+            <div id="error-msg" class="error-msg"></div>
+
+            <!-- Action Button -->
+            <button class="action-btn" onclick="processData()" id="action-btn">
+                <i data-lucide="zap"></i> Generate Invisible Ink
+            </button>
+
+            <!-- Result Section -->
+            <div class="result-area" id="result-area">
+                <label id="result-label">Result</label>
+                <div class="result-box">
+                    <button class="copy-btn" onclick="copyToClipboard()">
+                        <i data-lucide="copy" style="width: 14px; height: 14px;"></i> Copy
+                    </button>
+                    <div id="output-text" style="white-space: pre-wrap;"></div>
+                </div>
+
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-item">
+                        Hidden Characters
+                        <span class="stat-value" id="stat-hidden-chars">0</span>
+                    </div>
+                    <div class="stat-item">
+                        Cover Length
+                        <span class="stat-value" id="stat-cover-len">0</span>
+                    </div>
+                </div>
+
+                <div id="warning-msg" style="margin-top: 1rem; font-size: 0.85rem; display:none; flex-direction: column; gap: 0.75rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
+                    <div style="color: var(--warning); display: flex; align-items: flex-start; gap: 0.5rem;">
+                        <i data-lucide="alert-triangle" style="width:16px; min-width:16px; margin-top: 2px;"></i>
+                        <span><strong>Important:</strong> You must use <strong>COPY & PASTE</strong>. You cannot type this manually because the hidden message is invisible!</span>
+                    </div>
+                    <div style="color: var(--text-muted); display: flex; align-items: flex-start; gap: 0.5rem;">
+                        <i data-lucide="smartphone" style="width:16px; min-width:16px; margin-top: 2px;"></i>
+                        <span><strong>Platform Tips:</strong> Works best on WhatsApp, Telegram, and Email. Some older SMS apps or code editors may strip invisible characters.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="card" style="margin-top: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="info"></i> How it Works
+            </h3>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                <strong>Invisible Ink</strong> uses Zero-Width Steganography. It converts your encrypted secret message into a sequence of zero-width characters (invisible to the eye) and embeds them inside normal text.
+            </p>
+            <ul style="color: var(--text-muted); padding-left: 1.5rem; margin-top: 0.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>Hide:</strong> We take your secret, encrypt it with your password, turn it into invisible binary markers (<code>U+200B</code> & <code>U+200C</code>), and inject it into your Cover Text.</li>
+                <li><strong>Reveal:</strong> We extract the invisible markers, decode them back to binary, decrypt them with your password, and reveal the secret.</li>
+            </ul>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Stega Suite. Secure Client-Side Processing.</p>
+        <div class="footer-links">
+            <button onclick="openModal('terms')">Terms & Conditions</button>
+            <button onclick="openModal('disclaimer')">Disclaimer</button>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Policy</h2>
+                <button class="close-modal" onclick="closeModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-content" id="modal-body">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // --- Core Logic: Zero Width Encoding ---
+
+        const ZERO_WIDTH_SPACE = '\u200B';      // Represents Binary 0
+        const ZERO_WIDTH_NON_JOINER = '\u200C'; // Represents Binary 1
+
+        function bufferToZeroWidth(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binaryString = "";
+            
+            // Convert bytes to binary string
+            for (let i = 0; i < bytes.length; i++) {
+                // pads with leading zeros to ensure 8 bits
+                binaryString += bytes[i].toString(2).padStart(8, '0');
+            }
+
+            // Map binary to zero width chars
+            let zeroWidthStr = "";
+            for (let bit of binaryString) {
+                if (bit === '0') zeroWidthStr += ZERO_WIDTH_SPACE;
+                else zeroWidthStr += ZERO_WIDTH_NON_JOINER;
+            }
+            return zeroWidthStr;
+        }
+
+        function zeroWidthToBuffer(zwString) {
+            // Filter out only our specific characters
+            let binaryString = "";
+            for (let char of zwString) {
+                if (char === ZERO_WIDTH_SPACE) binaryString += '0';
+                else if (char === ZERO_WIDTH_NON_JOINER) binaryString += '1';
+            }
+
+            if (binaryString.length === 0) throw new Error("No hidden content found.");
+            if (binaryString.length % 8 !== 0) throw new Error("Corrupted hidden data (incomplete bytes).");
+
+            const byteCount = binaryString.length / 8;
+            const bytes = new Uint8Array(byteCount);
+
+            for (let i = 0; i < byteCount; i++) {
+                const byteStr = binaryString.substring(i * 8, (i + 1) * 8);
+                bytes[i] = parseInt(byteStr, 2);
+            }
+
+            return bytes;
+        }
+
+        // --- Core Logic: AES-256-GCM (Reused for Security) ---
+
+        async function deriveKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw",
+                enc.encode(password),
+                { name: "PBKDF2" },
+                false,
+                ["deriveKey"]
+            );
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encrypt(secret, password) {
+            try {
+                const enc = new TextEncoder();
+                const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+                const key = await deriveKey(password, salt);
+                const encryptedContent = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    enc.encode(secret)
+                );
+
+                // Pack: Salt + IV + Cipher
+                const buffer = new Uint8Array(salt.byteLength + iv.byteLength + encryptedContent.byteLength);
+                buffer.set(salt, 0);
+                buffer.set(iv, 16);
+                buffer.set(new Uint8Array(encryptedContent), 28);
+
+                return buffer; // Returns Uint8Array
+            } catch (e) {
+                console.error(e);
+                throw new Error("Encryption failed");
+            }
+        }
+
+        async function decrypt(buffer, password) {
+            try {
+                if (buffer.byteLength < 28) throw new Error("Data too short");
+
+                const salt = buffer.slice(0, 16);
+                const iv = buffer.slice(16, 28);
+                const data = buffer.slice(28);
+
+                const key = await deriveKey(password, salt);
+                const decryptedContent = await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    data
+                );
+
+                const dec = new TextDecoder();
+                return dec.decode(decryptedContent);
+            } catch (e) {
+                console.error(e);
+                throw new Error("Decryption failed. Wrong password or corrupted data.");
+            }
+        }
+
+        // --- UI Logic ---
+
+        let currentMode = 'hide';
+
+        function switchTab(mode) {
+            currentMode = mode;
+            
+            // UI Updates
+            document.getElementById('tab-hide').className = mode === 'hide' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tab-reveal').className = mode === 'reveal' ? 'tab-btn active' : 'tab-btn';
+            
+            document.getElementById('hide-inputs').style.display = mode === 'hide' ? 'block' : 'none';
+            document.getElementById('reveal-inputs').style.display = mode === 'reveal' ? 'block' : 'none';
+            
+            const actionBtn = document.getElementById('action-btn');
+            const resultLabel = document.getElementById('result-label');
+            const resultArea = document.getElementById('result-area');
+            const errorMsg = document.getElementById('error-msg');
+            const termsCheck = document.getElementById('terms-check');
+
+            // Reset Output
+            resultArea.classList.remove('visible');
+            errorMsg.style.display = 'none';
+            document.getElementById('output-text').innerText = '';
+            document.getElementById('stats-grid').style.display = 'none';
+            document.getElementById('warning-msg').style.display = 'none';
+            
+            // Reset terms check
+            termsCheck.checked = false;
+
+            if (mode === 'hide') {
+                actionBtn.innerHTML = '<i data-lucide="zap"></i> Generate Invisible Ink';
+                resultLabel.innerText = 'Result (Copy this text)';
+            } else {
+                actionBtn.innerHTML = '<i data-lucide="search"></i> Reveal Secret';
+                resultLabel.innerText = 'Revealed Message';
+            }
+            lucide.createIcons();
+        }
+
+        function togglePassword() {
+            const input = document.getElementById('password');
+            if (input.type === 'password') input.type = 'text';
+            else input.type = 'password';
+        }
+
+        async function processData() {
+            const password = document.getElementById('password').value;
+            const termsCheck = document.getElementById('terms-check');
+            const errorMsg = document.getElementById('error-msg');
+            const outputDiv = document.getElementById('output-text');
+            const resultArea = document.getElementById('result-area');
+            const actionBtn = document.getElementById('action-btn');
+            
+            errorMsg.style.display = 'none';
+            resultArea.classList.remove('visible');
+
+            if (!password) {
+                showError("Password is required for encryption security.");
+                return;
+            }
+
+            if (!termsCheck.checked) {
+                showError("You must accept the Terms & Conditions to proceed.");
+                return;
+            }
+
+            actionBtn.disabled = true;
+            actionBtn.innerText = "Processing...";
+
+            try {
+                if (currentMode === 'hide') {
+                    const secret = document.getElementById('secret-text').value;
+                    const cover = document.getElementById('cover-text').value;
+
+                    if (!secret) throw new Error("Please enter a secret message.");
+                    if (!cover) throw new Error("Please enter cover text.");
+
+                    // 1. Encrypt Secret
+                    const encryptedBuffer = await encrypt(secret, password);
+                    
+                    // 2. Convert to Zero Width
+                    const zwString = bufferToZeroWidth(encryptedBuffer);
+
+                    // 3. Embed into Cover
+                    // Strategy: Insert after the first character if possible, otherwise append.
+                    // This helps it survive some trimming algorithms.
+                    let finalString = "";
+                    if (cover.length > 0) {
+                        // Split string properly to handle emojis/unicode in cover text
+                        const chars = Array.from(cover); 
+                        if (chars.length > 1) {
+                            // Insert after first char
+                            finalString = chars[0] + zwString + chars.slice(1).join('');
+                        } else {
+                            finalString = cover + zwString;
+                        }
+                    } else {
+                        // Edge case: Empty cover (just invisible chars) - suspicious but valid
+                        finalString = zwString; 
+                    }
+
+                    outputDiv.innerText = finalString;
+                    
+                    // Stats
+                    document.getElementById('stat-hidden-chars').innerText = zwString.length;
+                    document.getElementById('stat-cover-len').innerText = cover.length;
+                    document.getElementById('stats-grid').style.display = 'grid';
+                    document.getElementById('warning-msg').style.display = 'flex';
+
+                } else {
+                    // Reveal Mode
+                    const stegaText = document.getElementById('stega-text').value;
+                    if (!stegaText) throw new Error("Please paste the text with hidden content.");
+
+                    // 1. Extract Buffer from Zero Width Chars
+                    const buffer = zeroWidthToBuffer(stegaText);
+
+                    // 2. Decrypt
+                    const secret = await decrypt(buffer, password);
+                    
+                    outputDiv.innerText = secret;
+                    document.getElementById('stats-grid').style.display = 'none';
+                    document.getElementById('warning-msg').style.display = 'none';
+                }
+
+                resultArea.classList.add('visible');
+                
+            } catch (e) {
+                showError(e.message);
+            } finally {
+                actionBtn.disabled = false;
+                if (currentMode === 'hide') actionBtn.innerHTML = '<i data-lucide="zap"></i> Generate Invisible Ink';
+                else actionBtn.innerHTML = '<i data-lucide="search"></i> Reveal Secret';
+                lucide.createIcons();
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.innerText = msg;
+            el.style.display = 'block';
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('output-text').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = 'Copied!';
+                setTimeout(() => btn.innerHTML = originalHTML, 2000);
+            });
+        }
+
+        // --- Modal Logic ---
+
+        const modalContent = {
+            terms: `
+            <h3>Strict Terms & Conditions</h3>
+            <p style="color: #ef4444; font-weight: bold;">AGREEMENT TO ABSOLUTE WAIVER OF LIABILITY</p>
+            <p>By checking the acceptance box and using Stega Suite Invisible Ink, you irrevocably agree to the following terms without exception:</p>
+            <ul>
+                <li><strong>Assumption of Risk:</strong> You acknowledge that the use of this software is entirely at your own risk. The software is provided "AS IS" without warranty of any kind, express or implied.</li>
+                <li><strong>No Liability for Developers:</strong> The creators, developers, and hosts of Stega Suite shall NEVER be held liable for any damages, data loss, financial loss, or legal consequences arising from the use, misuse, or inability to use this tool.</li>
+                <li><strong>Encryption & Security:</strong> While AES-256-GCM is used, we guarantee NOTHING regarding its impenetrability. If your data is decrypted by a third party, cracked, intercepted, or exposed due to user error or technological advancement, we are not responsible.</li>
+                <li><strong>Total Responsibility for Passwords:</strong> You are solely responsible for your password. There is NO recovery mechanism. If you lose your password, your data is permanently lost. We are not responsible for user negligence.</li>
+                <li><strong>Indemnification:</strong> You agree to indemnify and hold harmless the developers from any claims, suits, or demands related to your use of this tool.</li>
+            </ul>
+        `,
+            disclaimer: `
+            <h3>Privacy Policy & Disclaimer</h3>
+            <p style="color: #ef4444; font-weight: bold;">CLIENT-SIDE ONLY PROCESSING</p>
+            <p>Stega Suite operates entirely within your web browser.</p>
+            <p><strong>Strict Privacy Policy:</strong></p>
+            <ul>
+                <li><strong>No Server Storage:</strong> We do not store, log, or transmit your passwords, secret messages, or cover text to any server. All processing happens locally on your device.</li>
+                <li><strong>No Data Collection:</strong> We do not use cookies or tracking scripts to monitor your activity within this tool.</li>
+                <li>If encryption is bypassed by third parties, we are not liable.</li>
+                <li>If you lose your password, your data is gone forever.</li>
+            </ul>
+            <p>By using this website, you acknowledge that you take full responsibility for your data security.</p>
+        `
+        };
+
+        function openModal(type) {
+            document.getElementById('modal-title').innerText = type === 'terms' ? 'Terms & Conditions' : 'Privacy & Disclaimer';
+            document.getElementById('modal-body').innerHTML = modalContent[type];
+            document.getElementById('modal-overlay').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('open');
+        }
+
+        // Close modal on click outside
+        document.getElementById('modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modal-overlay') closeModal();
+        });
+
+    </script>
+</body>
+</html>

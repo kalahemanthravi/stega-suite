@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stega Suite | Secure Encryption</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        bg: {
+                            900: '#030014', // Deep space
+                            800: '#0f0c29',
+                            700: '#1a1b4b',
+                        },
+                        accent: {
+                            400: '#a78bfa',
+                            500: '#8b5cf6', // Violet
+                            600: '#7c3aed',
+                        },
+                        secondary: {
+                            400: '#f472b6', // Pink
+                            500: '#ec4899',
+                        }
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'hero-glow': 'conic-gradient(from 180deg at 50% 50%, #2a8af6 0deg, #a853ba 180deg, #e92a67 360deg)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #030014;
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-card {
+            background: rgba(20, 20, 40, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+            outline: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #db2777 0%, #7c3aed 100%);
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-primary:hover::before {
+            opacity: 1;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(219, 39, 119, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* Loading spinner */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+
+<body class="text-gray-300 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <nav class="border-b border-white/5 bg-bg-900/30 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div
+                    class="relative w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-wide">Stega<span
+                            class="text-violet-400">Suite</span></h1>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main App -->
+    <main class="flex-grow container mx-auto px-4 py-12 max-w-6xl">
+
+        <!-- Mode Switcher -->
+        <div class="flex justify-center mb-12">
+            <div class="glass-card p-1.5 rounded-2xl inline-flex gap-1 relative">
+                <button id="tab-encrypt" onclick="switchTab('encrypt')"
+                    class="relative px-8 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-300 shadow-lg bg-white/10">
+                    Encrypt
+                </button>
+                <button id="tab-decrypt" onclick="switchTab('decrypt')"
+                    class="relative px-8 py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-white transition-all duration-300">
+                    Decrypt
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+
+            <!-- Left Column: Input & Controls -->
+            <div class="space-y-6 flex flex-col">
+                <div class="flex justify-between items-center px-1">
+                    <label id="input-label"
+                        class="text-sm font-semibold text-violet-200 tracking-wide uppercase">Plaintext Input</label>
+                    <span id="char-count" class="text-xs font-mono text-gray-500 bg-white/5 px-2 py-1 rounded">0
+                        chars</span>
+                </div>
+
+                <div class="relative group flex-grow">
+                    <textarea id="input-text" placeholder="Type your sensitive message here..."
+                        class="glass-input w-full h-80 lg:h-[28rem] rounded-2xl p-6 resize-none font-mono text-sm text-gray-100 placeholder-gray-600"></textarea>
+                    <button onclick="clearInput()"
+                        class="absolute top-4 right-4 p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors opacity-0 group-hover:opacity-100">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Settings & Output -->
+            <div class="space-y-6 flex flex-col">
+
+                <!-- Password Card -->
+                <div class="glass-card rounded-2xl p-6 space-y-5">
+                    <div class="flex justify-between items-center">
+                        <label class="text-sm font-semibold text-violet-200 tracking-wide uppercase">Encryption
+                            Key</label>
+                        <div
+                            class="flex items-center gap-2 text-[10px] font-bold text-gray-500 bg-black/20 px-2 py-1 rounded border border-white/5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            AES-GCM-256
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <input type="password" id="password" placeholder="Enter a strong password"
+                            class="glass-input w-full px-5 py-4 rounded-xl text-white font-mono text-sm tracking-wider">
+                        <button onclick="togglePasswordVisibility()"
+                            class="absolute right-4 top-4 text-gray-500 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- STRICT Terms Checkbox -->
+                    <div class="flex items-start gap-3 px-1 pt-3 border-t border-white/5">
+                        <div class="flex items-center h-5 mt-1">
+                            <input id="terms-checkbox" type="checkbox"
+                                class="w-5 h-5 rounded border-gray-600 bg-black/30 text-violet-600 focus:ring-violet-500 focus:ring-offset-gray-900 transition-colors cursor-pointer">
+                        </div>
+                        <div class="text-xs text-gray-400 leading-relaxed">
+                            <label for="terms-checkbox" class="text-gray-300 font-medium cursor-pointer">I agree to the
+                                <button onclick="document.getElementById('terms-modal').classList.remove('hidden')"
+                                    class="text-violet-400 hover:text-violet-300 underline font-bold">Terms &
+                                    Conditions</button></label>
+                            <p class="mt-1 opacity-70">You must accept the terms before proceeding. We are not
+                                responsible for any data loss.</p>
+                        </div>
+                    </div>
+
+                    <button id="action-btn" onclick="processData()"
+                        class="btn-primary w-full py-4 rounded-xl text-white font-bold tracking-wide uppercase text-sm shadow-xl flex items-center justify-center gap-2">
+                        <span id="btn-text">Encrypt Message</span>
+                        <svg id="btn-icon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <svg id="loading-spinner" class="hidden w-5 h-5 spinner" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Output Area -->
+                <div class="flex-grow flex flex-col space-y-2">
+                    <label id="output-label"
+                        class="text-sm font-semibold text-violet-200 tracking-wide uppercase px-1">Encrypted
+                        Output</label>
+                    <div class="relative group flex-grow h-full">
+                        <div
+                            class="absolute -inset-0.5 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur">
+                        </div>
+                        <textarea id="output-text" readonly placeholder="Result will appear here..."
+                            class="relative w-full h-full min-h-[200px] bg-[#0a0a16] text-violet-300 p-6 rounded-2xl border border-white/10 resize-none font-mono text-sm focus:outline-none"></textarea>
+
+                        <!-- Status Notification -->
+                        <div id="status-msg"
+                            class="hidden absolute top-4 left-4 right-4 bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-lg text-sm backdrop-blur-md">
+                            Error message
+                        </div>
+
+                        <button onclick="copyToClipboard()"
+                            class="absolute top-4 right-4 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-3 py-2 rounded-lg text-xs font-medium border border-white/5 transition-all flex items-center backdrop-blur-sm z-10">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3">
+                                </path>
+                            </svg>
+                            Copy
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- Instructions Panel -->
+        <div class="mt-8 glass-card rounded-2xl p-8 border border-white/5 animate-pulse-slow">
+            <h3 class="text-xl font-bold text-violet-300 mb-4 flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                How to Use
+            </h3>
+            <div class="grid md:grid-cols-2 gap-8 text-sm text-gray-400">
+                <div>
+                    <strong class="text-white block mb-2">What is this?</strong>
+                    <p class="leading-relaxed">
+                        This tool transforms readable text into a secure, scrambled code using military-grade AES-256
+                        encryption.
+                        It ensures that only someone with the correct password can read your message.
+                        The process happens entirely in your browser; no data is ever sent to a server.
+                    </p>
+                </div>
+                <div>
+                    <strong class="text-white block mb-2">Steps:</strong>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><strong>Encrypt:</strong> Type your message, enter a password, and click 'Encrypt'. Copy the
+                            resulting code.</li>
+                        <li><strong>Decrypt:</strong> Paste the code into the input box, switch to 'Decrypt' mode, enter
+                            the password, and click 'Decrypt'.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 mt-auto bg-black/20 backdrop-blur-sm">
+        <div
+            class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500 font-mono">
+            <p>&copy; 2026 Stega Suite. 100% Client-Side Encryption.</p>
+            <div class="mt-4 md:mt-0 flex gap-6">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-violet-500"></span>PBKDF2
+                    SHA-256</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pink-500"></span>Zero
+                    Knowledge</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- New Terms & Conditions Modal -->
+    <div id="terms-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-black/90 backdrop-blur-sm transition-opacity"
+                onclick="document.getElementById('terms-modal').classList.add('hidden')"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div
+                class="inline-block align-middle glass-card rounded-2xl text-left overflow-hidden transform transition-all sm:max-w-lg sm:w-full border border-white/10">
+                <div class="p-8">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        Terms & Conditions
+                    </h3>
+                    <div class="space-y-4 text-sm text-gray-400 max-h-[60vh] overflow-y-auto pr-2">
+                        <p class="text-xs uppercase tracking-wider font-bold text-gray-500">Last Updated: January 1,
+                            2026</p>
+
+                        <div class="space-y-2">
+                            <h4 class="text-white font-bold">1. Absolute Waiver of Liability</h4>
+                            <p>By using Stega Suite ("the Service"), you explicitly acknowledge and agree that the
+                                developers, owners, and affiliates of the Service shall NOT be held liable for any data
+                                loss, data corruption, or unauthorized access to your data. The entire risk arising out
+                                of the use or performance of the Service remains with you.</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-white font-bold">2. No Recovery Service</h4>
+                            <p class="text-red-300 bg-red-500/10 p-2 rounded border border-red-500/20">We utilize strong
+                                client-side encryption. We do NOT store your passwords or keys. If you lose or forget
+                                your password, your data is PERMANENTLY LOST. There is no backdoor, no reset function,
+                                and no customer support that can recover your data.</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-white font-bold">3. Security Disclaimer</h4>
+                            <p>While we employ industry-standard AES-GCM-256 encryption, no software is immune to
+                                vulnerabilities. You agree that if your encrypted data is cracked, decrypted by third
+                                parties, or compromised due to browser malware, user negligence, or quantum computing
+                                advances, Stega Suite bears NO responsibility.</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-white font-bold">4. "As Is" Basis</h4>
+                            <p>The Service is provided "AS IS" and "AS AVAILABLE" without warranty of any kind, express
+                                or implied, including but not limited to the warranties of merchantability, fitness for
+                                a particular purpose, and non-infringement.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-black/40 px-6 py-4 flex justify-end">
+                    <button type="button"
+                        class="w-full sm:w-auto inline-flex justify-center rounded-xl px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-sm font-medium text-white transition-colors shadow-lg"
+                        onclick="document.getElementById('terms-modal').classList.add('hidden')">
+                        Close & Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // State Management
+        let currentMode = 'encrypt';
+
+        // Constants for Encryption
+        const PBKDF2_ITERATIONS = 100000;
+        const SALT_LENGTH = 16;
+        const IV_LENGTH = 12;
+        const ALGORITHM_NAME = 'AES-GCM';
+        const DIGEST = 'SHA-256';
+
+        // UI Helpers
+        const els = {
+            input: document.getElementById('input-text'),
+            output: document.getElementById('output-text'),
+            password: document.getElementById('password'),
+            btnText: document.getElementById('btn-text'),
+            btnIcon: document.getElementById('btn-icon'),
+            spinner: document.getElementById('loading-spinner'),
+            inputLabel: document.getElementById('input-label'),
+            outputLabel: document.getElementById('output-label'),
+            tabEncrypt: document.getElementById('tab-encrypt'),
+            tabDecrypt: document.getElementById('tab-decrypt'),
+            charCount: document.getElementById('char-count'),
+            statusMsg: document.getElementById('status-msg')
+        };
+
+        // Utility: ArrayBuffer to Base64
+        function bufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        // Utility: Base64 to ArrayBuffer
+        function base64ToBuffer(base64) {
+            const binary_string = window.atob(base64);
+            const len = binary_string.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binary_string.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        // --- Core Crypto Functions ---
+
+        async function getPasswordKey(password) {
+            const enc = new TextEncoder();
+            return window.crypto.subtle.importKey(
+                "raw",
+                enc.encode(password),
+                "PBKDF2",
+                false,
+                ["deriveKey"]
+            );
+        }
+
+        async function deriveKey(passwordKey, salt) {
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: PBKDF2_ITERATIONS,
+                    hash: DIGEST
+                },
+                passwordKey,
+                { name: ALGORITHM_NAME, length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encryptData(text, password) {
+            try {
+                const salt = window.crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+                const iv = window.crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+                const passwordKey = await getPasswordKey(password);
+                const aesKey = await deriveKey(passwordKey, salt);
+                const enc = new TextEncoder();
+                const encryptedContent = await window.crypto.subtle.encrypt(
+                    { name: ALGORITHM_NAME, iv: iv },
+                    aesKey,
+                    enc.encode(text)
+                );
+                const saltB64 = bufferToBase64(salt);
+                const ivB64 = bufferToBase64(iv);
+                const cipherB64 = bufferToBase64(encryptedContent);
+                return `${saltB64}:${ivB64}:${cipherB64}`;
+            } catch (err) {
+                console.error("Encryption failed:", err);
+                throw new Error("Encryption process failed.");
+            }
+        }
+
+        async function decryptData(packedData, password) {
+            try {
+                const parts = packedData.split(':');
+                if (parts.length !== 3) throw new Error("Invalid data format.");
+                const salt = base64ToBuffer(parts[0]);
+                const iv = base64ToBuffer(parts[1]);
+                const ciphertext = base64ToBuffer(parts[2]);
+                const passwordKey = await getPasswordKey(password);
+                const aesKey = await deriveKey(passwordKey, salt);
+                const decryptedContent = await window.crypto.subtle.decrypt(
+                    { name: ALGORITHM_NAME, iv: iv },
+                    aesKey,
+                    ciphertext
+                );
+                const dec = new TextDecoder();
+                return dec.decode(decryptedContent);
+            } catch (err) {
+                console.error("Decryption failed:", err);
+                throw new Error("Decryption failed. Wrong password or corrupted data.");
+            }
+        }
+
+        // --- UI Logic ---
+
+        function switchTab(mode) {
+            currentMode = mode;
+            els.input.value = '';
+            els.output.value = '';
+            els.password.value = '';
+            els.statusMsg.classList.add('hidden');
+            updateCharCount();
+
+            const activeClass = "bg-white/10 text-white shadow-lg";
+            const inactiveClass = "text-gray-400 hover:text-white";
+
+            if (mode === 'encrypt') {
+                els.tabEncrypt.className = `relative px-8 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeClass}`;
+                els.tabDecrypt.className = `relative px-8 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${inactiveClass}`;
+                els.inputLabel.textContent = "Plaintext Input";
+                els.input.placeholder = "Type your sensitive message here...";
+                els.outputLabel.textContent = "Encrypted Output";
+                els.btnText.textContent = "Encrypt Message";
+                els.input.classList.remove('font-mono', 'text-xs');
+                els.btnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />`;
+            } else {
+                els.tabDecrypt.className = `relative px-8 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${activeClass}`;
+                els.tabEncrypt.className = `relative px-8 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${inactiveClass}`;
+                els.inputLabel.textContent = "Encrypted Data Input";
+                els.input.placeholder = "Paste the encrypted string here...";
+                els.outputLabel.textContent = "Decrypted Message";
+                els.btnText.textContent = "Decrypt Message";
+                els.input.classList.add('font-mono', 'text-xs');
+                els.btnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />`;
+            }
+        }
+
+        function setLoading(isLoading) {
+            els.statusMsg.classList.add('hidden');
+            if (isLoading) {
+                els.btnText.classList.add('opacity-50');
+                els.btnIcon.classList.add('hidden');
+                els.spinner.classList.remove('hidden');
+                document.getElementById('action-btn').disabled = true;
+            } else {
+                els.btnText.classList.remove('opacity-50');
+                els.btnIcon.classList.remove('hidden');
+                els.spinner.classList.add('hidden');
+                document.getElementById('action-btn').disabled = false;
+            }
+        }
+
+        function showError(msg) {
+            els.statusMsg.textContent = msg;
+            els.statusMsg.classList.remove('hidden');
+            const btn = document.getElementById('action-btn');
+            btn.classList.add('animate-pulse');
+            setTimeout(() => btn.classList.remove('animate-pulse'), 500);
+        }
+
+        async function processData() {
+            const text = els.input.value.trim();
+            const password = els.password.value;
+            const termsChecked = document.getElementById('terms-checkbox').checked;
+
+            if (!text) {
+                showError("Please enter text to process.");
+                return;
+            }
+            if (!password) {
+                showError("Password is required.");
+                return;
+            }
+
+            // STRICT CHECKBOX ENFORCEMENT
+            if (!termsChecked) {
+                showError("You MUST agree to the Terms & Conditions.");
+                // Visual cue to checkbox
+                const termsContainer = document.querySelector('.border-t.border-white\\/5');
+                termsContainer.classList.add('bg-red-500/20', 'rounded-lg', 'transition-colors');
+                setTimeout(() => termsContainer.classList.remove('bg-red-500/20'), 1000);
+                return;
+            }
+
+            setLoading(true);
+
+            setTimeout(async () => {
+                try {
+                    let result;
+                    if (currentMode === 'encrypt') {
+                        result = await encryptData(text, password);
+                    } else {
+                        result = await decryptData(text, password);
+                    }
+                    els.output.value = result;
+                    els.output.parentElement.classList.add('ring-2', 'ring-violet-500', 'ring-opacity-50');
+                    setTimeout(() => els.output.parentElement.classList.remove('ring-2', 'ring-violet-500', 'ring-opacity-50'), 500);
+
+                } catch (error) {
+                    showError(error.message);
+                    els.output.value = "";
+                } finally {
+                    setLoading(false);
+                }
+            }, 300);
+        }
+
+        function copyToClipboard() {
+            const copyText = els.output;
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                const btn = event.currentTarget;
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = `<span class="text-emerald-400 font-bold">Copied!</span>`;
+                btn.classList.add('bg-emerald-500/10', 'border-emerald-500/50');
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    btn.classList.remove('bg-emerald-500/10', 'border-emerald-500/50');
+                }, 1500);
+            } catch (e) {
+                console.error("Copy failed");
+            }
+        }
+
+        function togglePasswordVisibility() {
+            const type = els.password.getAttribute('type') === 'password' ? 'text' : 'password';
+            els.password.setAttribute('type', type);
+        }
+
+        function clearInput() {
+            els.input.value = '';
+            els.output.value = '';
+            els.password.value = '';
+            updateCharCount();
+        }
+
+        function updateCharCount() {
+            els.charCount.textContent = `${els.input.value.length} chars`;
+        }
+
+        els.input.addEventListener('input', updateCharCount);
+
+    </script>
+</body>
+
+</html>

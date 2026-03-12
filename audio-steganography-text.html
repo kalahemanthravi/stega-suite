@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SonicCrypt - Military Grade Audio Steganography</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #e2e8f0;
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 40%);
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6, #a855f7);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s ease;
+        }
+
+        .tab-btn.active::after {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+        
+        .tab-btn.active {
+            color: white;
+            background: rgba(255,255,255,0.03);
+        }
+
+        /* Audio Visualizer Canvas */
+        #visualizer {
+            width: 100%;
+            height: 80px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #fff;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Password Strength Meter */
+        .strength-bar {
+            height: 4px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            width: 0%;
+        }
+        .strength-weak { width: 33%; background-color: #ef4444; }
+        .strength-medium { width: 66%; background-color: #eab308; }
+        .strength-strong { width: 100%; background-color: #22c55e; }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <i class="fa-solid fa-shield-halved text-white text-sm"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-white">Sonic<span class="text-blue-400">Crypt</span> <span class="text-xs bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-slate-400 ml-1 align-top font-normal">PRO</span></span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-green-900/20 border border-green-900/50 text-green-400 text-xs font-mono">
+                        <i class="fa-solid fa-lock text-[10px]"></i> AES-256-GCM
+                    </div>
+                     <button onclick="togglePolicyModal()" class="text-sm text-slate-400 hover:text-white transition-colors">Privacy & Terms</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-4xl">
+
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold mb-4 text-white">Secure Audio Steganography</h1>
+            <p class="text-slate-400 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+                Encrypt sensitive data using <span class="text-blue-400 font-mono">AES-256</span> and embed it invisibly into audio waveforms.
+                Zero knowledge architecture—your key never leaves your device.
+            </p>
+        </div>
+
+        <!-- App Container -->
+        <div class="glass-panel rounded-xl overflow-hidden shadow-2xl">
+            
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-700/50 bg-slate-900/30">
+                <button onclick="switchTab('encode')" id="tab-encode" 
+                    class="tab-btn active w-1/2 py-4 text-center font-medium text-slate-200 transition-colors hover:text-white">
+                    <div class="flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-shield"></i>
+                        <span>Encrypt & Hide</span>
+                    </div>
+                </button>
+                <button onclick="switchTab('decode')" id="tab-decode" 
+                    class="tab-btn w-1/2 py-4 text-center font-medium text-slate-500 transition-colors hover:text-white">
+                    <div class="flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-unlock-keyhole"></i>
+                        <span>Decrypt & Reveal</span>
+                    </div>
+                </button>
+            </div>
+
+            <div class="p-6 md:p-8">
+                
+                <!-- ENCODE SECTION -->
+                <div id="panel-encode" class="animate-fade-in block">
+                    <div class="space-y-6">
+                        
+                        <!-- 1. Audio Input -->
+                        <div class="p-5 rounded-lg bg-slate-800/40 border border-slate-700/50 transition-all hover:border-blue-500/30 group">
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="block text-xs font-bold text-blue-400 uppercase tracking-wider">1. Cover Audio</label>
+                                <span class="text-[10px] text-slate-500 bg-slate-800 px-2 py-1 rounded border border-slate-700">WAV or MP3</span>
+                            </div>
+
+                            <input type="file" id="audioInput" accept="audio/*" class="hidden" onchange="handleAudioUpload(this)">
+                            
+                            <div class="flex flex-col sm:flex-row gap-4 items-center">
+                                <label for="audioInput" class="w-full sm:w-auto text-center flex-shrink-0 cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-200 px-6 py-2.5 rounded-lg transition-colors border border-slate-600 shadow-sm">
+                                    <i class="fa-solid fa-upload mr-2"></i> Upload Audio
+                                </label>
+                                <div id="fileInfo" class="text-slate-400 text-sm font-mono truncate w-full pl-2 border-l border-slate-700">No file selected</div>
+                            </div>
+
+                            <!-- Visualizer -->
+                            <div class="mt-4 relative hidden transition-all duration-500" id="visualizerContainer">
+                                <canvas id="visualizer"></canvas>
+                                <div class="absolute top-2 right-2 text-[10px] text-blue-300 font-mono bg-black/40 px-2 rounded">WAVEFORM VIEW</div>
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- 2. Password -->
+                            <div class="p-5 rounded-lg bg-slate-800/40 border border-slate-700/50 transition-all hover:border-green-500/30">
+                                <label class="block text-xs font-bold text-green-400 mb-3 uppercase tracking-wider">2. Encryption Password</label>
+                                <div class="relative">
+                                    <input type="password" id="encPassword" oninput="checkStrength()"
+                                        class="w-full bg-slate-900/80 border border-slate-700 rounded-lg p-3 pl-10 text-slate-300 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/50 transition-colors code-font text-sm"
+                                        placeholder="Min 8 chars, mix of numbers/letters">
+                                    <i class="fa-solid fa-key absolute left-3 top-3.5 text-slate-500"></i>
+                                </div>
+                                
+                                <!-- Strength Meter -->
+                                <div class="mt-2 flex items-center gap-2">
+                                    <div class="flex-grow bg-slate-700 h-1 rounded-full overflow-hidden">
+                                        <div id="strengthBar" class="strength-bar"></div>
+                                    </div>
+                                    <span id="strengthText" class="text-[10px] text-slate-500 font-bold uppercase w-16 text-right">None</span>
+                                </div>
+                            </div>
+
+                            <!-- 3. Message -->
+                            <div class="p-5 rounded-lg bg-slate-800/40 border border-slate-700/50 md:col-span-2 transition-all hover:border-purple-500/30">
+                                <div class="flex justify-between items-center mb-3">
+                                    <label class="block text-xs font-bold text-purple-400 uppercase tracking-wider">3. Secret Data</label>
+                                    <span id="capacityIndicator" class="text-[10px] text-slate-500 font-mono">Capacity: 0 chars</span>
+                                </div>
+                                <textarea id="secretMessage" rows="4" 
+                                    class="w-full bg-slate-900/80 border border-slate-700 rounded-lg p-3 text-slate-300 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors code-font text-sm"
+                                    placeholder="Type the message you want to encrypt and hide..."></textarea>
+                                <div class="flex justify-end mt-2">
+                                    <span id="charCount" class="text-[10px] text-slate-500">0 chars</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Action & Terms -->
+                        <div> 
+                            <div class="flex items-start gap-3 p-3 bg-blue-900/10 rounded-lg border border-slate-700/60 mb-4 hover:bg-blue-900/20 transition-colors">
+                                <input type="checkbox" id="termsCheck" class="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-offset-slate-900 focus:ring-blue-500 cursor-pointer">
+                                <label for="termsCheck" class="text-xs text-slate-300 cursor-pointer select-none leading-relaxed">
+                                    I agree to the <button onclick="togglePolicyModal()" class="text-blue-400 hover:text-blue-300 underline">Terms & Conditions</button>. I understand that I am responsible for securing my key and that compressed files (WhatsApp/Messenger) will result in data loss.
+                                </label>
+                            </div>
+
+                            <button id="btnEncode" onclick="processEncoding()" disabled
+                                class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-lg shadow-blue-900/20 transition-all transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-lock"></i> Encrypt & Download WAV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DECODE SECTION -->
+                <div id="panel-decode" class="animate-fade-in hidden">
+                    <div class="space-y-6">
+                        
+                         <!-- File Input -->
+                         <div class="p-8 rounded-lg bg-slate-800/30 border-2 border-dashed border-slate-700 hover:border-slate-500 transition-colors text-center group">
+                            <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-file-audio text-2xl text-slate-400 group-hover:text-blue-400 transition-colors"></i>
+                            </div>
+                            <h3 class="text-slate-200 font-medium mb-1">Upload Encoded Audio</h3>
+                            <p class="text-xs text-slate-500 mb-6">Only .wav files created by SonicCrypt</p>
+                            
+                            <input type="file" id="decodeInput" accept=".wav" class="hidden" onchange="handleDecodeUpload(this)">
+                            <label for="decodeInput" class="inline-flex cursor-pointer bg-slate-700 hover:bg-slate-600 text-white px-6 py-2.5 rounded-lg transition-colors items-center gap-2 shadow-lg">
+                                <i class="fa-solid fa-folder-open"></i> Select File
+                            </label>
+                            <p id="decodeFileInfo" class="mt-4 text-sm text-blue-400 font-mono min-h-[20px]"></p>
+                        </div>
+
+                        <!-- Decrypt Password -->
+                        <div class="p-5 rounded-lg bg-slate-800/40 border border-slate-700/50">
+                            <label class="block text-xs font-bold text-green-400 mb-3 uppercase tracking-wider">Decryption Password</label>
+                            <div class="relative">
+                                <input type="password" id="decPassword" 
+                                    class="w-full bg-slate-900/80 border border-slate-700 rounded-lg p-3 pl-10 text-slate-300 focus:outline-none focus:border-green-500 transition-colors code-font text-sm"
+                                    placeholder="Enter the password used during encryption">
+                                <i class="fa-solid fa-key absolute left-3 top-3.5 text-slate-500"></i>
+                            </div>
+                        </div>
+
+                        <!-- Decode Terms Checkbox -->
+                        <div class="flex items-start gap-3 p-3 bg-slate-800/40 rounded-lg border border-slate-700/60 hover:bg-slate-800/60 transition-colors">
+                            <input type="checkbox" id="termsCheckDecode" class="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-offset-slate-900 focus:ring-blue-500 cursor-pointer">
+                            <label for="termsCheckDecode" class="text-xs text-slate-300 cursor-pointer select-none leading-relaxed">
+                                I confirm I am authorized to decrypt this file and agree to the <button onclick="togglePolicyModal()" class="text-blue-400 hover:text-blue-300 underline">Terms & Conditions</button>.
+                            </label>
+                        </div>
+
+                        <button id="btnDecode" onclick="processDecoding()" disabled
+                            class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-all border border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-unlock-keyhole"></i> Decrypt Message
+                        </button>
+
+                        <!-- Output -->
+                        <div class="relative pt-2">
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Decrypted Content</label>
+                            <div class="relative">
+                                <textarea id="decodedOutput" readonly
+                                    class="w-full h-32 bg-black/40 border border-slate-700 rounded-lg p-4 font-mono text-sm text-green-400 focus:outline-none resize-none"
+                                    placeholder="Hidden message will appear here upon successful decryption..."></textarea>
+                                <button onclick="copyToClipboard()" class="absolute top-2 right-2 p-2 text-slate-500 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded transition-colors" title="Copy to Clipboard">
+                                    <i class="fa-regular fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-500">
+            <div class="bg-slate-900/30 p-4 rounded border border-slate-800/50">
+                <div class="font-bold text-slate-400 mb-1"><i class="fa-solid fa-microchip mr-1"></i> AES-256-GCM</div>
+                The gold standard in encryption. GCM mode ensures both confidentiality and data integrity.
+            </div>
+            <div class="bg-slate-900/30 p-4 rounded border border-slate-800/50">
+                <div class="font-bold text-slate-400 mb-1"><i class="fa-solid fa-shield-cat mr-1"></i> Strong Keys</div>
+                We enforce strong password complexity to maximize the effectiveness of PBKDF2 hashing.
+            </div>
+            <div class="bg-slate-900/30 p-4 rounded border border-slate-800/50">
+                <div class="font-bold text-slate-400 mb-1"><i class="fa-solid fa-laptop-code mr-1"></i> Client-Side</div>
+                Your data never leaves your device. All processing happens in your browser's memory.
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-[60] transform translate-y-24 transition-transform duration-300">
+        <div class="bg-slate-800 text-white px-6 py-4 rounded-lg shadow-xl border border-slate-600 flex items-center gap-4 min-w-[300px]">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-green-500 text-xl"></i>
+            <div>
+                <h4 id="toastTitle" class="font-bold text-sm">Success</h4>
+                <p id="toastMessage" class="text-xs text-slate-300">Operation completed</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Policy Modal -->
+    <div id="policyModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel bg-slate-900 rounded-2xl max-w-2xl w-full p-8 relative shadow-2xl border border-slate-700 flex flex-col max-h-[90vh]">
+            <button onclick="togglePolicyModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <div class="mb-4">
+                <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-blue-500"></i> Legal & Privacy
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">Last Updated: January 2025</p>
+            </div>
+            
+            <div class="overflow-y-auto pr-4 space-y-6 text-sm text-slate-300 leading-relaxed scrollbar-thin">
+                
+                <section>
+                    <h3 class="font-bold text-white text-base mb-2 border-b border-slate-700 pb-1">1. Terms of Service</h3>
+                    <p class="mb-2">By using SonicCrypt, you agree to the following terms:</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-400">
+                        <li><strong>Lawful Use Only:</strong> You agree not to use this tool for illicit activities, hiding illegal content, or evading lawful surveillance.</li>
+                        <li><strong>No Liability:</strong> SonicCrypt is provided "AS IS". The developers assume no liability for data loss, corruption, or legal consequences arising from your use of this tool.</li>
+                        <li><strong>Data Responsibility:</strong> You are solely responsible for remembering your password. We cannot recover lost passwords or decrypt files without the correct key.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3 class="font-bold text-white text-base mb-2 border-b border-slate-700 pb-1">2. Privacy Policy</h3>
+                    <p class="mb-2">We prioritize your privacy through our architecture:</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-400">
+                        <li><strong>Zero Knowledge:</strong> We do not have access to your files, passwords, or messages.</li>
+                        <li><strong>Local Processing:</strong> All encryption, decryption, and audio processing occur entirely within your browser using the Web Audio and Web Crypto APIs. No data is transmitted to external servers.</li>
+                        <li><strong>No Tracking:</strong> We do not use cookies or trackers to monitor your activity within this application.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3 class="font-bold text-white text-base mb-2 border-b border-slate-700 pb-1">3. Technical Security</h3>
+                    <p>
+                        We employ military-grade encryption standards:
+                        <span class="text-green-400">AES-256-GCM</span> for data encryption and 
+                        <span class="text-purple-400">PBKDF2-SHA256</span> (100,000 iterations) for key derivation. 
+                        While robust, no system is completely immune to all forms of attack (e.g., coercion, keyloggers on your device).
+                    </p>
+                </section>
+
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-700 flex justify-end">
+                <button onclick="togglePolicyModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-blue-900/20">
+                    I Understand & Agree
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global State ---
+        let audioContext = null;
+        let sourceAudioBuffer = null;
+        let decodeFile = null;
+        let isPasswordStrong = false;
+
+        // --- Cryptography Functions (Web Crypto API) ---
+
+        async function deriveKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw", 
+                enc.encode(password), 
+                { name: "PBKDF2" }, 
+                false, 
+                ["deriveKey"]
+            );
+            
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encryptMessage(message, password) {
+            const enc = new TextEncoder();
+            const encodedMsg = enc.encode(message);
+            const salt = window.crypto.getRandomValues(new Uint8Array(16));
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveKey(password, salt);
+            const ciphertext = await window.crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv }, key, encodedMsg
+            );
+            const combined = new Uint8Array(16 + 12 + ciphertext.byteLength);
+            combined.set(salt, 0); combined.set(iv, 16); combined.set(new Uint8Array(ciphertext), 28);
+            return combined;
+        }
+
+        async function decryptMessage(encryptedData, password) {
+            try {
+                const salt = encryptedData.slice(0, 16);
+                const iv = encryptedData.slice(16, 28);
+                const ciphertext = encryptedData.slice(28);
+                const key = await deriveKey(password, salt);
+                const decrypted = await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: iv }, key, ciphertext
+                );
+                const dec = new TextDecoder();
+                return dec.decode(decrypted);
+            } catch (e) {
+                console.error(e);
+                throw new Error("Decryption failed. Wrong password or corrupted file.");
+            }
+        }
+
+        // --- UI & Helper Functions ---
+
+        function switchTab(tab) {
+            const tabs = ['encode', 'decode'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const panel = document.getElementById(`panel-${t}`);
+                if(t === tab) {
+                    btn.classList.add('active'); btn.classList.remove('text-slate-500'); btn.classList.add('text-slate-200');
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('active'); btn.classList.add('text-slate-500'); btn.classList.remove('text-slate-200');
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
+        function togglePolicyModal() {
+            const modal = document.getElementById('policyModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function checkStrength() {
+            const pwd = document.getElementById('encPassword').value;
+            const bar = document.getElementById('strengthBar');
+            const text = document.getElementById('strengthText');
+            
+            // Regex: At least 8 chars, at least 1 letter, at least 1 number
+            const strongRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+            const mediumRegex = /^(?=.*[A-Za-z])[A-Za-z\d@$!%*#?&]{6,}$/;
+
+            if(strongRegex.test(pwd)) {
+                bar.className = 'strength-bar strength-strong';
+                text.innerText = "Strong";
+                text.className = "text-[10px] text-green-500 font-bold uppercase w-16 text-right";
+                isPasswordStrong = true;
+            } else if (mediumRegex.test(pwd)) {
+                bar.className = 'strength-bar strength-medium';
+                text.innerText = "Medium";
+                text.className = "text-[10px] text-yellow-500 font-bold uppercase w-16 text-right";
+                isPasswordStrong = false;
+            } else {
+                bar.className = 'strength-bar strength-weak';
+                text.innerText = "Weak";
+                text.className = "text-[10px] text-red-500 font-bold uppercase w-16 text-right";
+                isPasswordStrong = false;
+            }
+        }
+
+        function showToast(title, msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastTitle').innerText = title;
+            document.getElementById('toastMessage').innerText = msg;
+            const iconEl = document.getElementById('toastIcon');
+            
+            if(type === 'error') iconEl.className = 'fa-solid fa-circle-xmark text-red-500 text-xl';
+            else if(type === 'processing') iconEl.className = 'spinner';
+            else iconEl.className = 'fa-solid fa-circle-check text-green-500 text-xl';
+
+            toast.classList.remove('translate-y-24');
+            if(type !== 'processing') setTimeout(() => toast.classList.add('translate-y-24'), 4000);
+        }
+
+        function copyToClipboard() {
+            const el = document.getElementById('decodedOutput');
+            el.select(); document.execCommand('copy');
+            showToast("Copied", "Text copied to clipboard");
+        }
+
+        // --- Audio Visualizer ---
+        function visualizeAudio(buffer) {
+            const canvas = document.getElementById('visualizer');
+            const container = document.getElementById('visualizerContainer');
+            const ctx = canvas.getContext('2d');
+            container.classList.remove('hidden');
+            canvas.width = container.offsetWidth; canvas.height = 80;
+            const data = buffer.getChannelData(0); 
+            const step = Math.ceil(data.length / canvas.width);
+            const amp = canvas.height / 2;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(0,0,canvas.width, canvas.height);
+            ctx.beginPath(); ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 1;
+            for(let i = 0; i < canvas.width; i++) {
+                let min = 1.0; let max = -1.0;
+                for(let j=0; j<step; j++) {
+                    const datum = data[(i * step) + j];
+                    if (datum < min) min = datum; if (datum > max) max = datum;
+                }
+                if (max === min) { max += 0.001; min -= 0.001; }
+                ctx.moveTo(i, (1 + min) * amp); ctx.lineTo(i, (1 + max) * amp);
+            }
+            ctx.stroke();
+        }
+
+        // --- Core Logic: Upload ---
+        async function handleAudioUpload(input) {
+            const file = input.files[0]; if(!file) return;
+            document.getElementById('fileInfo').innerText = file.name;
+            document.getElementById('btnEncode').disabled = true;
+            showToast("Processing", "Analyzing audio waveform...", "processing");
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                sourceAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                visualizeAudio(sourceAudioBuffer);
+                calculateCapacity();
+                document.getElementById('btnEncode').disabled = false;
+                showToast("Ready", "Audio loaded successfully");
+            } catch (e) {
+                console.error(e);
+                showToast("Error", "Invalid audio file. Try another.", "error");
+            }
+        }
+
+        function calculateCapacity() {
+            if(!sourceAudioBuffer) return;
+            const totalSamples = sourceAudioBuffer.length * sourceAudioBuffer.numberOfChannels;
+            const overheadBits = 400; 
+            const availableBits = totalSamples - overheadBits;
+            const availableChars = Math.floor(availableBits / 8);
+            document.getElementById('capacityIndicator').innerText = `Max Capacity: ${availableChars.toLocaleString()} chars`;
+            const textarea = document.getElementById('secretMessage');
+            textarea.oninput = () => {
+                const len = textarea.value.length;
+                document.getElementById('charCount').innerText = `${len.toLocaleString()} chars`;
+                if(len > availableChars) {
+                    document.getElementById('charCount').classList.add('text-red-500');
+                    document.getElementById('btnEncode').disabled = true;
+                } else {
+                    document.getElementById('charCount').classList.remove('text-red-500');
+                    if(sourceAudioBuffer) document.getElementById('btnEncode').disabled = false;
+                }
+            };
+        }
+
+        // --- Core Logic: Encoding ---
+        async function processEncoding() {
+            // 1. Check Terms
+            if(!document.getElementById('termsCheck').checked) {
+                showToast("Terms Not Accepted", "You must agree to the terms to proceed.", "error");
+                return;
+            }
+
+            // 2. Check Password Strength
+            if(!isPasswordStrong) {
+                showToast("Weak Password", "Password must be at least 8 chars with letters & numbers.", "error");
+                document.getElementById('encPassword').focus();
+                return;
+            }
+            
+            const message = document.getElementById('secretMessage').value;
+            const password = document.getElementById('encPassword').value;
+            if(!message) return showToast("Error", "Message cannot be empty", "error");
+
+            showToast("Encrypting", "AES-256 encryption in progress...", "processing");
+            await new Promise(r => setTimeout(r, 100));
+
+            try {
+                const encryptedData = await encryptMessage(message, password);
+                const numChannels = sourceAudioBuffer.numberOfChannels;
+                const sampleRate = sourceAudioBuffer.sampleRate;
+                const length = sourceAudioBuffer.length;
+                const pcmData = new Int16Array(length * numChannels);
+
+                for(let i = 0; i < length; i++) {
+                    for(let ch = 0; ch < numChannels; ch++) {
+                        const sample = sourceAudioBuffer.getChannelData(ch)[i];
+                        let s = Math.max(-1, Math.min(1, sample));
+                        s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        pcmData[(i * numChannels) + ch] = s;
+                    }
+                }
+
+                const totalBitsNeeded = 32 + (encryptedData.length * 8);
+                if(pcmData.length < totalBitsNeeded) throw new Error("Message is too long for this audio file.");
+
+                let bitIndex = 0;
+                const dataLength = encryptedData.length;
+                for(let i = 0; i < 32; i++) {
+                    const bit = (dataLength >> i) & 1;
+                    pcmData[bitIndex] = (pcmData[bitIndex] & ~1) | bit;
+                    bitIndex++;
+                }
+                for(let i = 0; i < dataLength; i++) {
+                    const byte = encryptedData[i];
+                    for(let j = 0; j < 8; j++) {
+                        const bit = (byte >> j) & 1;
+                        pcmData[bitIndex] = (pcmData[bitIndex] & ~1) | bit;
+                        bitIndex++;
+                    }
+                }
+
+                const wavBytes = encodeWAV(pcmData, numChannels, sampleRate);
+                const blob = new Blob([wavBytes], { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'sonic_crypt_secure.wav';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+                showToast("Success", "File encrypted and downloaded!", "success");
+            } catch (err) {
+                console.error(err);
+                showToast("Error", err.message, "error");
+            }
+        }
+
+        function encodeWAV(samples, numChannels, sampleRate) {
+            const buffer = new ArrayBuffer(44 + samples.length * 2);
+            const view = new DataView(buffer);
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            };
+            writeString(0, 'RIFF'); view.setUint32(4, 36 + samples.length * 2, true); writeString(8, 'WAVE');
+            writeString(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * numChannels * 2, true);
+            view.setUint16(32, numChannels * 2, true); view.setUint16(34, 16, true);
+            writeString(36, 'data'); view.setUint32(40, samples.length * 2, true);
+            let offset = 44;
+            for (let i = 0; i < samples.length; i++) { view.setInt16(offset, samples[i], true); offset += 2; }
+            return view;
+        }
+
+        // --- Core Logic: Decoding ---
+        function handleDecodeUpload(input) {
+            const file = input.files[0]; if(!file) return;
+            if(!file.name.toLowerCase().endsWith('.wav')) {
+                showToast("Invalid Type", "Only .wav files are supported", "error");
+                return;
+            }
+            decodeFile = file;
+            document.getElementById('decodeFileInfo').innerText = file.name;
+            document.getElementById('btnDecode').disabled = false;
+        }
+
+        function processDecoding() {
+            // Check Terms Checkbox for Decode
+            if(!document.getElementById('termsCheckDecode').checked) {
+                showToast("Terms Not Accepted", "You must agree to the terms to decrypt.", "error");
+                return;
+            }
+
+            const password = document.getElementById('decPassword').value;
+            if(!decodeFile) return showToast("Error", "No file selected", "error");
+            if(!password) return showToast("Error", "Password is required", "error");
+
+            showToast("Decrypting", "Extracting and verifying data...", "processing");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const view = new DataView(arrayBuffer);
+                    let pos = 12; let foundData = false;
+                    while (pos < view.byteLength) {
+                        const chunkId = String.fromCharCode(view.getUint8(pos), view.getUint8(pos+1), view.getUint8(pos+2), view.getUint8(pos+3));
+                        pos += 4; const chunkSize = view.getUint32(pos, true); pos += 4;
+                        if (chunkId === 'data') {
+                            foundData = true; extractAndDecrypt(view, pos, chunkSize, password); break;
+                        } else pos += chunkSize;
+                    }
+                    if (!foundData) throw new Error("No audio data found in file.");
+                } catch (err) {
+                    console.error(err); showToast("Failed", err.message, "error");
+                }
+            };
+            reader.readAsArrayBuffer(decodeFile);
+        }
+
+        async function extractAndDecrypt(view, offset, size, password) {
+            try {
+                let sampleIdx = 0;
+                let dataLen = 0;
+                for(let i=0; i<32; i++) {
+                    const sample = view.getInt16(offset + (sampleIdx*2), true);
+                    const bit = sample & 1;
+                    dataLen |= (bit << i);
+                    sampleIdx++;
+                }
+                if(dataLen <= 0 || dataLen > size) throw new Error("No hidden data detected or file corrupted.");
+                const encryptedBytes = new Uint8Array(dataLen);
+                for(let i=0; i<dataLen; i++) {
+                    let byteVal = 0;
+                    for(let j=0; j<8; j++) {
+                        const sample = view.getInt16(offset + (sampleIdx*2), true);
+                        const bit = sample & 1;
+                        byteVal |= (bit << j);
+                        sampleIdx++;
+                    }
+                    encryptedBytes[i] = byteVal;
+                }
+                const plaintext = await decryptMessage(encryptedBytes, password);
+                document.getElementById('decodedOutput').value = plaintext;
+                showToast("Success", "Message decrypted successfully!", "success");
+            } catch (err) {
+                console.error(err);
+                if(err.message.includes("Decryption failed")) showToast("Auth Failed", "Incorrect password or corrupted data.", "error");
+                else showToast("Error", err.message, "error");
+            }
+        }
+    </script>
+</body>
+</html>

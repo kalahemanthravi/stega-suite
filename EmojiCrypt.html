@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Encrypter</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: var(--bg-card);
+            padding: 0.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.2);
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        textarea,
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .action-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Result Area */
+        .result-area {
+            margin-top: 2rem;
+            border-top: 1px solid var(--border);
+            padding-top: 2rem;
+            display: none;
+        }
+
+        .result-area.visible {
+            display: block;
+        }
+
+        .result-box {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            position: relative;
+            word-break: break-all;
+            margin-top: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .copy-btn:hover {
+            background: var(--success);
+            color: white;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .footer-links button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.875rem;
+        }
+
+        .footer-links button:hover {
+            color: var(--primary);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .modal-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            color: var(--primary);
+            margin: 1.5rem 0 0.5rem 0;
+        }
+
+        .modal-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .modal-content p,
+        .modal-content ul {
+            margin-bottom: 1rem;
+            color: var(--text-muted);
+        }
+
+        .modal-content ul {
+            padding-left: 1.5rem;
+        }
+
+        /* Error state */
+        .error-msg {
+            color: var(--error);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        @media (max-width: 640px) {
+            .brand span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <i data-lucide="shield-check" color="#8b5cf6"></i>
+            Stega Suite <span>Emoji Encrypter</span>
+        </div>
+        <div style="font-size: 0.875rem; color: var(--text-muted);">
+            v1.0.0
+        </div>
+    </header>
+
+    <main>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('encrypt')" id="tab-encrypt">
+                <i data-lucide="lock"></i> Encrypt
+            </button>
+            <button class="tab-btn" onclick="switchTab('decrypt')" id="tab-decrypt">
+                <i data-lucide="unlock"></i> Decrypt
+            </button>
+        </div>
+
+        <div class="card">
+            <!-- Input Section -->
+            <div class="form-group">
+                <label id="input-label">Plain Text</label>
+                <textarea id="input-text" placeholder="Enter text to encrypt..."></textarea>
+                <div id="error-msg" class="error-msg"></div>
+            </div>
+
+            <!-- Password Section -->
+            <div class="form-group">
+                <label>Encryption Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" placeholder="Create a strong password">
+                    <button class="toggle-password" onclick="togglePassword()">
+                        <i data-lucide="eye" id="eye-icon"></i>
+                    </button>
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    <i data-lucide="alert-circle" style="width: 12px; height: 12px; display:inline;"></i>
+                    Caution: If you lose this password, the data cannot be recovered.
+                </p>
+            </div>
+
+            <!-- Terms Checkbox -->
+            <div class="form-group"
+                style="display: flex; align-items: flex-start; gap: 0.75rem; background: rgba(15, 23, 42, 0.5); padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                <input type="checkbox" id="terms-check"
+                    style="width: 20px; height: 20px; margin-top: 0.1rem; cursor: pointer;">
+                <label for="terms-check" style="font-size: 0.8rem; line-height: 1.4; margin: 0; cursor: pointer;">
+                    I accept the <strong onclick="openModal('terms')"
+                        style="cursor:pointer; text-decoration:underline;">Terms & Conditions</strong>. I acknowledge
+                    that use of this tool is entirely at my own risk and that the developers assume <strong>NO
+                        LIABILITY</strong> for data loss, decryption failures, or security breaches.
+                </label>
+            </div>
+
+            <!-- Action Button -->
+            <button class="action-btn" onclick="processData()" id="action-btn">
+                <i data-lucide="lock"></i> Encrypt to Emoji
+            </button>
+
+            <!-- Result Section -->
+            <div class="result-area" id="result-area">
+                <label id="result-label">Encrypted Emojis</label>
+                <div class="result-box">
+                    <button class="copy-btn" onclick="copyToClipboard()">
+                        <i data-lucide="copy" style="width: 14px; height: 14px;"></i> Copy
+                    </button>
+                    <div id="output-text"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Instructions -->
+        <div class="card" style="margin-top: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="info"></i> Tool Guide
+            </h3>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                <strong>What is this?</strong> Emoji Crypt is a fun yet secure tool that turns your text into a sequence
+                of emojis. It uses military-grade encryption, so the emojis are not just random—they hold your actual
+                message!
+            </p>
+            <p style="color: var(--text-muted);">
+                <strong>How to use:</strong>
+            </p>
+            <ul style="color: var(--text-muted); padding-left: 1.5rem; margin-top: 0.5rem;">
+                <li><strong>Encrypt:</strong> Type your message, set a password, and get a string of emojis. Send these
+                    emojis to a friend.</li>
+                <li><strong>Decrypt:</strong> Switch to the Decrypt tab, paste the emoji string you received, enter the
+                    password, and read the hidden message.</li>
+            </ul>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Stega Suite. All calculations performed locally.</p>
+        <div class="footer-links">
+            <button onclick="openModal('terms')">Terms & Conditions</button>
+            <button onclick="openModal('disclaimer')">Disclaimer</button>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Policy</h2>
+                <button class="close-modal" onclick="closeModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-content" id="modal-body">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // --- Core Logic: AES-256-GCM Encryption ---
+
+        // Custom Emoji Alphabet (65 chars: 64 for Base64 + 1 for padding)
+        // Updated to avoid variant selectors
+        const EMOJI_MAP = [
+            // A-Z (26)
+            "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐔", "🐧", "🐦", "🐤", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴",
+            // a-z (26)
+            "🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍈", "🍒", "🍑", "🍍", "🥝", "🍅", "🥥", "🥑", "🍆", "🥔", "🥕", "🌽", "🍪", "🥒", "🥦", "🍄", "🥜",
+            // 0-9 (10)
+            "⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏉", "🎱", "🏓", "🏸",
+            // + (1)
+            "⭐",
+            // / (1)
+            "🌟",
+            // = (1)
+            "💎"
+        ];
+
+        const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+        // Helper: Convert Binary Buffer to Emoji String
+        function bufferToEmojis(buffer) {
+            let binaryString = "";
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binaryString += String.fromCharCode(bytes[i]);
+            }
+            const b64 = btoa(binaryString);
+
+            let emojiResult = "";
+            for (let i = 0; i < b64.length; i++) {
+                const char = b64[i];
+                const index = BASE64_CHARS.indexOf(char);
+                if (index !== -1) {
+                    emojiResult += EMOJI_MAP[index];
+                }
+            }
+            return emojiResult;
+        }
+
+        // Helper: Convert Emoji String back to Binary Buffer
+        // ROBUST VERSION: Ignores spaces, newlines, and invalid chars
+        function emojisToBuffer(emojiString) {
+            const emojis = Array.from(emojiString);
+            let b64 = "";
+
+            for (let e of emojis) {
+                const index = EMOJI_MAP.indexOf(e);
+                if (index !== -1) {
+                    b64 += BASE64_CHARS[index];
+                }
+                // If index is -1 (not in map), we silently skip it.
+                // This handles copy-paste artifacts like spaces or newlines.
+            }
+
+            // Ensure we have a valid Base64 string to decode
+            if (b64.length === 0) throw new Error("No valid emojis found.");
+
+            try {
+                const binaryString = atob(b64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return bytes;
+            } catch (e) {
+                throw new Error("Corrupted emoji data structure.");
+            }
+        }
+
+        // crypto: Derive Key using PBKDF2
+        async function deriveKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw",
+                enc.encode(password),
+                { name: "PBKDF2" },
+                false,
+                ["deriveKey"]
+            );
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encrypt(text, password) {
+            try {
+                const enc = new TextEncoder();
+                // 1. Generate Salt (16 bytes) and IV (12 bytes)
+                const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+                // 2. Derive Key
+                const key = await deriveKey(password, salt);
+
+                // 3. Encrypt
+                const encryptedContent = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    enc.encode(text)
+                );
+
+                // 4. Pack Data: Salt + IV + CipherText
+                const buffer = new Uint8Array(salt.byteLength + iv.byteLength + encryptedContent.byteLength);
+                buffer.set(salt, 0);
+                buffer.set(iv, 16);
+                buffer.set(new Uint8Array(encryptedContent), 28);
+
+                // 5. Convert to Emojis
+                return bufferToEmojis(buffer);
+            } catch (e) {
+                console.error(e);
+                throw new Error("Encryption failed");
+            }
+        }
+
+        async function decrypt(emojiString, password) {
+            try {
+                // 1. Decode Emojis to Buffer
+                const fullBuffer = emojisToBuffer(emojiString);
+
+                // Min length check (Salt 16 + IV 12 + Auth Tag 16 approx)
+                if (fullBuffer.length < 28) throw new Error("Data too short");
+
+                // 2. Extract Salt, IV, and CipherText
+                const salt = fullBuffer.slice(0, 16);
+                const iv = fullBuffer.slice(16, 28);
+                const data = fullBuffer.slice(28);
+
+                // 3. Derive Key
+                const key = await deriveKey(password, salt);
+
+                // 4. Decrypt
+                const decryptedContent = await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    data
+                );
+
+                const dec = new TextDecoder();
+                return dec.decode(decryptedContent);
+            } catch (e) {
+                console.error(e);
+                // Web Crypto throws specific errors for bad keys/padding
+                throw new Error("Decryption failed. Wrong password or corrupted data.");
+            }
+        }
+
+
+        // --- UI Logic ---
+
+        let currentMode = 'encrypt'; // 'encrypt' or 'decrypt'
+
+        function switchTab(mode) {
+            currentMode = mode;
+
+            // Update Tabs
+            document.getElementById('tab-encrypt').className = mode === 'encrypt' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tab-decrypt').className = mode === 'decrypt' ? 'tab-btn active' : 'tab-btn';
+
+            // Update Labels & Placeholders
+            const inputLabel = document.getElementById('input-label');
+            const inputText = document.getElementById('input-text');
+            const actionBtn = document.getElementById('action-btn');
+            const resultLabel = document.getElementById('result-label');
+            const resultArea = document.getElementById('result-area');
+            const errorMsg = document.getElementById('error-msg');
+            const termsCheck = document.getElementById('terms-check');
+
+            // Clear previous state
+            inputText.value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('output-text').innerText = '';
+            termsCheck.checked = false; // Reset checkbox on tab switch
+            resultArea.classList.remove('visible');
+            errorMsg.style.display = 'none';
+
+            if (mode === 'encrypt') {
+                inputLabel.innerText = 'Plain Text';
+                inputText.placeholder = 'Enter text to encrypt...';
+                actionBtn.innerHTML = '<i data-lucide="lock"></i> Encrypt to Emoji';
+                resultLabel.innerText = 'Encrypted Emojis';
+            } else {
+                inputLabel.innerText = 'Encrypted Emojis';
+                inputText.placeholder = 'Paste emojis here... (e.g. 🐶🍏🍒...)';
+                actionBtn.innerHTML = '<i data-lucide="unlock"></i> Decrypt to Text';
+                resultLabel.innerText = 'Decrypted Text';
+            }
+            lucide.createIcons();
+        }
+
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+            } else {
+                input.type = 'password';
+            }
+        }
+
+        async function processData() {
+            const input = document.getElementById('input-text').value.trim();
+            const password = document.getElementById('password').value;
+            const termsCheck = document.getElementById('terms-check');
+            const outputDiv = document.getElementById('output-text');
+            const resultArea = document.getElementById('result-area');
+            const errorMsg = document.getElementById('error-msg');
+            const actionBtn = document.getElementById('action-btn');
+
+            errorMsg.style.display = 'none';
+            outputDiv.innerText = '';
+
+            if (!input) {
+                errorMsg.innerText = "Please enter content to process.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+            if (!password) {
+                errorMsg.innerText = "Please enter a password.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+            if (!termsCheck.checked) {
+                errorMsg.innerText = "You must accept the Terms & Conditions to proceed.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // Loading state
+            const originalBtnText = actionBtn.innerHTML;
+            actionBtn.innerText = "Processing...";
+            actionBtn.disabled = true;
+
+            try {
+                let result = "";
+                if (currentMode === 'encrypt') {
+                    result = await encrypt(input, password);
+                } else {
+                    result = await decrypt(input, password);
+                }
+
+                outputDiv.innerText = result;
+                resultArea.classList.add('visible');
+            } catch (e) {
+                errorMsg.innerText = currentMode === 'decrypt'
+                    ? "Decryption Failed: Incorrect password or corrupted data."
+                    : "Encryption Failed: Please try again.";
+                errorMsg.style.display = 'block';
+                resultArea.classList.remove('visible');
+            } finally {
+                actionBtn.innerHTML = originalBtnText;
+                actionBtn.disabled = false;
+            }
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('output-text').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = 'Copied!';
+                setTimeout(() => btn.innerHTML = originalHTML, 2000);
+            });
+        }
+
+        // --- Modal Logic ---
+
+        const modalContent = {
+            terms: `
+            <h3>Strict Terms & Conditions</h3>
+            <p style="color: #ef4444; font-weight: bold;">AGREEMENT TO ABSOLUTE WAIVER OF LIABILITY</p>
+            <p>By checking the acceptance box and using Stega Suite, you irrevocably agree to the following terms without exception:</p>
+            <ul>
+                <li><strong>Assumption of Risk:</strong> You acknowledge that the use of this software is entirely at your own risk. The software is provided "AS IS" without warranty of any kind, express or implied.</li>
+                <li><strong>No Liability for Developers:</strong> The creators, developers, and hosts of Stega Suite shall NEVER be held liable for any damages, data loss, financial loss, or legal consequences arising from the use, misuse, or inability to use this tool.</li>
+                <li><strong>Encryption & Security:</strong> While AES-256-GCM is used, we guarantee NOTHING regarding its impenetrability. If your data is decrypted by a third party, cracked, intercepted, or exposed due to user error or technological advancement, we are not responsible.</li>
+                <li><strong>Total Responsibility for Passwords:</strong> You are solely responsible for your password. There is NO recovery mechanism. If you lose your password, your data is permanently lost. We are not responsible for user negligence.</li>
+                <li><strong>Indemnification:</strong> You agree to indemnify and hold harmless the developers from any claims, suits, or demands related to your use of this tool.</li>
+            </ul>
+        `,
+            disclaimer: `
+            <h3>Data Recovery Disclaimer</h3>
+            <p style="color: #ef4444; font-weight: bold;">READ CAREFULLY</p>
+            <p>Stega Suite uses strong encryption dependent entirely on your password. We do not have a "Forgot Password" feature.</p>
+            <p><strong>Strict Policy:</strong></p>
+            <ul>
+                <li>We do not store your data or passwords.</li>
+                <li>If encryption is bypassed by third parties, we are not liable.</li>
+                <li>If you lose your password, your data is gone forever.</li>
+            </ul>
+            <p>By using this website, you acknowledge that you take full responsibility for your data security.</p>
+        `
+        };
+
+        function openModal(type) {
+            document.getElementById('modal-title').innerText = type === 'terms' ? 'Terms & Conditions' : 'Disclaimer';
+            document.getElementById('modal-body').innerHTML = modalContent[type];
+            document.getElementById('modal-overlay').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('open');
+        }
+
+        // Close modal on click outside
+        document.getElementById('modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modal-overlay') closeModal();
+        });
+
+    </script>
+</body>
+
+</html>

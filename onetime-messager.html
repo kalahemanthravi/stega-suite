@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Share | Encrypted Messaging</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary: #2563eb;
+            /* Blue-600 */
+            --primary-hover: #1d4ed8;
+            /* Blue-700 */
+            --bg-color: #f8fafc;
+            /* Slate-50 */
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            /* Slate-900 */
+            --text-muted: #64748b;
+            /* Slate-500 */
+            --border-col: #e2e8f0;
+            /* Slate-200 */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .card-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-col);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .input-field {
+            transition: all 0.2s;
+            border: 1px solid var(--border-col);
+        }
+
+        .input-field:focus-within {
+            border-color: var(--primary);
+            ring: 2px solid var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .hidden-anim {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .visible-anim {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Custom number input styling */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <!-- Navbar -->
+    <nav class="w-full max-w-4xl flex justify-between items-center py-6 mb-8">
+        <div class="flex items-center gap-3">
+            <div
+                class="w-10 h-10 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-center text-blue-600 shadow-sm">
+                <i data-lucide="shield-check"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-800">Secure Share</h1>
+                <p class="text-xs text-slate-500 font-medium">Zero-Knowledge Encryption</p>
+            </div>
+        </div>
+        <button onclick="resetApp()"
+            class="text-slate-500 hover:text-blue-600 transition-colors text-sm font-medium flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> New Message
+        </button>
+    </nav>
+
+    <!-- Main Interface -->
+    <main class="w-full max-w-2xl relative">
+
+        <!-- MODE: CREATE (ENCRYPT) -->
+        <div id="createMode" class="card-panel rounded-2xl p-8 transition-all duration-300">
+            <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                <div class="p-2 bg-blue-50 rounded-full text-blue-600">
+                    <i data-lucide="lock" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h2 class="font-bold text-lg text-slate-800">Encrypt Message</h2>
+                    <p class="text-xs text-slate-500">Create a secure link that expires automatically</p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Message Input -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-slate-700">Message Content</label>
+                    <div class="input-field rounded-xl bg-slate-50 overflow-hidden">
+                        <textarea id="secretMessage" rows="5"
+                            class="w-full bg-transparent p-4 text-slate-800 placeholder-slate-400 focus:outline-none resize-none text-sm"
+                            placeholder="Type your sensitive information here..."></textarea>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Column 1: Password -->
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-slate-700">Set Password</label>
+                            <div class="input-field rounded-xl bg-white flex items-center px-3">
+                                <i data-lucide="key" class="w-4 h-4 text-slate-400"></i>
+                                <input type="password" id="encryptPassword"
+                                    class="w-full bg-transparent p-3 text-slate-800 placeholder-slate-400 focus:outline-none text-sm"
+                                    placeholder="Password required to open">
+                            </div>
+                        </div>
+
+                        <!-- Burn Toggle -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-slate-700">Security Options</label>
+                            <label
+                                class="border border-slate-200 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all bg-white shadow-sm">
+                                <div>
+                                    <div class="text-sm text-slate-800 font-medium">Burn After Reading</div>
+                                    <div class="text-[11px] text-slate-500">Message deletes from device after 1 view
+                                    </div>
+                                </div>
+                                <div class="relative">
+                                    <input type="checkbox" id="burnCheck" class="peer sr-only">
+                                    <div
+                                        class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Custom Expiration -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-slate-700">Expiration Timer</label>
+                        <div
+                            class="border border-slate-200 bg-white rounded-xl p-4 h-full flex flex-col justify-between shadow-sm">
+                            <div class="text-[11px] text-slate-500 mb-2">Link becomes invalid after:</div>
+
+                            <div class="flex gap-2 items-center">
+                                <input type="number" id="timeValue" value="1" min="1"
+                                    class="w-20 bg-slate-50 border border-slate-200 rounded-lg p-2 text-center text-slate-800 font-bold focus:border-blue-500 outline-none transition-colors">
+
+                                <div class="relative flex-1">
+                                    <select id="timeUnit"
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 font-medium focus:border-blue-500 outline-none appearance-none cursor-pointer transition-colors">
+                                        <option value="minutes">Minutes</option>
+                                        <option value="hours" selected>Hours</option>
+                                        <option value="days">Days</option>
+                                    </select>
+                                    <i data-lucide="chevron-down"
+                                        class="absolute right-2 top-3 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms Checkbox -->
+                <div class="flex items-start gap-2 pt-2">
+                    <input type="checkbox" id="agreeCreate"
+                        class="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                    <label for="agreeCreate" class="text-xs text-slate-500">
+                        I agree to the <button onclick="toggleModal(true)" class="text-blue-600 hover:underline">Terms
+                            of Service, Privacy Policy</button>, and understand that the "Burn After Reading" feature is
+                        dependent on browser storage. I acknowledge the platform assumes no liability for lost data or
+                        cracked passwords.
+                    </label>
+                </div>
+
+                <!-- Action -->
+                <button id="generateBtn" onclick="generateLink()" disabled
+                    class="btn-primary w-full py-4 rounded-xl flex items-center justify-center gap-2 group mt-2 shadow-lg shadow-blue-500/20">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    <span>Generate Secure Link</span>
+                </button>
+
+                <p class="text-center text-[11px] text-slate-400">
+                    <i data-lucide="lock" class="w-3 h-3 inline mr-1"></i> Data is encrypted locally. We never see your
+                    password or message.
+                </p>
+            </div>
+        </div>
+
+        <!-- MODE: RESULT (LINK GENERATED) -->
+        <div id="resultMode" class="hidden-anim card-panel rounded-2xl p-10 text-center">
+            <div
+                class="w-20 h-20 rounded-full bg-green-50 text-green-500 mx-auto flex items-center justify-center mb-6 border-4 border-white shadow-lg">
+                <i data-lucide="check" class="w-10 h-10"></i>
+            </div>
+
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Message Encrypted</h2>
+            <p class="text-slate-500 text-sm mb-8 max-w-md mx-auto">Your secure link is ready. The message is embedded
+                in this link and cannot be recovered without the password.</p>
+
+            <div
+                class="bg-slate-50 border border-slate-200 rounded-xl p-2 pl-4 flex items-center gap-3 mb-8 overflow-hidden group focus-within:ring-2 focus-within:ring-blue-500/50 transition-all">
+                <input type="text" id="shareLink" readonly
+                    class="bg-transparent w-full text-slate-600 text-sm font-mono focus:outline-none">
+                <button onclick="copyLink()"
+                    class="bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-blue-600 transition-all p-3 rounded-lg shadow-sm">
+                    <i data-lucide="copy" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex gap-4 justify-center">
+                <button onclick="shareLinkNative()"
+                    class="px-6 py-2.5 rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-600 text-sm font-semibold transition-all bg-white shadow-sm flex items-center gap-2">
+                    <i data-lucide="share-2" class="w-4 h-4"></i> Share Link
+                </button>
+                <button onclick="resetApp()"
+                    class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold transition-all shadow-md flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Create New
+                </button>
+            </div>
+        </div>
+
+        <!-- MODE: READ (DECRYPT) -->
+        <div id="readMode" class="hidden-anim card-panel rounded-2xl p-8">
+            <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                <div class="p-2 bg-purple-50 rounded-full text-purple-600">
+                    <i data-lucide="eye" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h2 class="font-bold text-lg text-slate-800">Secure Message</h2>
+                    <p class="text-xs text-slate-500">You have received an encrypted payload</p>
+                </div>
+            </div>
+
+            <div id="decryptInputArea">
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6 flex gap-3">
+                    <i data-lucide="info" class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5"></i>
+                    <p class="text-blue-800 text-sm leading-relaxed">
+                        This message is password protected. It resides only in the URL and was not stored on any server.
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-slate-700">Enter Password</label>
+                        <div class="input-field rounded-xl bg-white flex items-center px-3">
+                            <i data-lucide="key" class="w-4 h-4 text-slate-400"></i>
+                            <input type="password" id="decryptPassword"
+                                class="w-full bg-transparent p-3 text-slate-800 placeholder-slate-400 focus:outline-none text-sm"
+                                placeholder="Enter password to unlock">
+                        </div>
+                    </div>
+
+                    <!-- Terms Checkbox Decrypt -->
+                    <div class="flex items-start gap-2 pt-2">
+                        <input type="checkbox" id="agreeRead"
+                            class="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <label for="agreeRead" class="text-xs text-slate-500">
+                            I accept the <button onclick="toggleModal(true)" class="text-blue-600 hover:underline">Terms
+                                of Service</button>. I understand that if I lose the password, the data is
+                            unrecoverable.
+                        </label>
+                    </div>
+
+                    <button id="viewBtn" onclick="attemptDecrypt()" disabled
+                        class="btn-primary w-full py-3.5 rounded-xl shadow-md">
+                        View Message
+                    </button>
+                </div>
+            </div>
+
+            <!-- Decryption Success -->
+            <div id="messageDisplay" class="hidden">
+                <div
+                    class="bg-slate-50 rounded-xl border border-slate-200 p-6 mb-6 shadow-inner relative overflow-hidden">
+                    <pre id="decryptedContent"
+                        class="text-slate-800 font-mono text-sm whitespace-pre-wrap break-words leading-relaxed"></pre>
+                </div>
+
+                <div class="text-center space-y-3 p-4 bg-orange-50 rounded-lg border border-orange-100">
+                    <div class="flex items-center justify-center gap-2 text-orange-600 font-semibold text-sm">
+                        <i data-lucide="flame" class="w-4 h-4"></i>
+                        <span>Destruction Protocol</span>
+                    </div>
+                    <p id="destroyTimer" class="text-xs text-orange-800/80 font-medium">
+                        <!-- Filled by JS -->
+                    </p>
+                    <button onclick="resetApp()" class="text-slate-400 hover:text-slate-600 text-xs underline mt-2">
+                        Close & Destroy Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            <div id="errorDisplay" class="hidden mt-4 bg-red-50 border border-red-100 p-4 rounded-xl text-center">
+                <div
+                    class="bg-red-100 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 text-red-500">
+                    <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-red-700 font-bold mb-1">Access Denied</h3>
+                <p id="errorText" class="text-red-600/80 text-sm">Incorrect password or message expired.</p>
+            </div>
+        </div>
+
+        <!-- Instructions Info -->
+        <div class="mt-8 bg-white/50 card-panel rounded-xl p-6 border border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                <i data-lucide="help-circle" class="w-5 h-5 text-blue-500"></i> What is this?
+            </h3>
+            <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+                This tool allows you to send a "self-destructing" link.
+                Imagine writing a note, putting it in a safe, and giving the safe to a friend.
+                Once they open it, the note vanishes forever.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600">
+                <div>
+                    <span class="font-semibold text-blue-600 block mb-1">Sending:</span>
+                    <ol class="list-decimal list-inside space-y-1">
+                        <li>Write your secret message.</li>
+                        <li>Set a password.</li>
+                        <li>(Optional) Enable "Burn After Reading".</li>
+                        <li>Generate and send the link.</li>
+                    </ol>
+                </div>
+                <div>
+                    <span class="font-semibold text-purple-600 block mb-1">Receiving:</span>
+                    <ol class="list-decimal list-inside space-y-1">
+                        <li>Open the shared link.</li>
+                        <li>Enter the password.</li>
+                        <li>Read the message immediately (it may disappear!).</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-slate-400 text-xs pb-6">
+        <p class="mb-2">Client-Side Encryption • No Data Logs • Secure & Private</p>
+        <button onclick="toggleModal(true)" class="text-slate-500 underline hover:text-slate-700">Legal & Terms</button>
+    </footer>
+
+    <!-- TERMS MODAL -->
+    <div id="termsModal" class="modal-overlay">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-lg text-slate-800">Terms & Legal Disclaimer</h3>
+                <button onclick="toggleModal(false)" class="text-slate-400 hover:text-slate-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto text-sm text-slate-600 space-y-4 leading-relaxed">
+                <section>
+                    <h4 class="font-bold text-slate-800 mb-1">1. Zero-Liability Policy</h4>
+                    <p>The operators of this website assume <strong>NO LIABILITY</strong> for the content encrypted or
+                        decrypted using this tool. We are not responsible for lost passwords, data loss, or any damages
+                        resulting from the use of this service. If your password is weak and subsequently cracked by a
+                        third party, we are not responsible.</p>
+                </section>
+
+                <section>
+                    <h4 class="font-bold text-slate-800 mb-1">2. "Burn After Reading" Mechanics</h4>
+                    <p>The "Burn After Reading" feature utilizes <strong>Client-Side Local Storage</strong>. When a
+                        message is viewed, it is marked as 'read' on that specific browser and device. We do not
+                        maintain a central database to track views globally. Therefore, while the link will not open
+                        again on the <em>same</em> device, it may theoretically be accessible on a different device
+                        until the time expiration is reached. This is a privacy feature, not a Digital Rights Management
+                        (DRM) guarantee.</p>
+                </section>
+
+                <section>
+                    <h4 class="font-bold text-slate-800 mb-1">3. Privacy & No-Log Policy</h4>
+                    <p>This tool operates entirely in your browser (Client-Side). We do not have servers that store your
+                        messages, passwords, or encryption keys. We cannot view, recover, or delete your messages
+                        because we do not possess them. The encrypted data resides solely within the URL generated.</p>
+                </section>
+
+                <section>
+                    <h4 class="font-bold text-slate-800 mb-1">4. Acceptable Use</h4>
+                    <p>You agree not to use this service for illegal activities, harassment, or the distribution of
+                        malicious software. We maintain no control over the content as it is encrypted before we (or
+                        anyone else) can see it.</p>
+                </section>
+
+                <section>
+                    <h4 class="font-bold text-slate-800 mb-1">5. External Links</h4>
+                    <p>We are not responsible for the content of any external links that may be included within
+                        encrypted messages. Click links at your own risk.</p>
+                </section>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 text-center">
+                <button onclick="toggleModal(false)" class="btn-primary px-8 py-2 rounded-lg text-sm">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // DOM Elements
+        const screens = {
+            create: document.getElementById('createMode'),
+            result: document.getElementById('resultMode'),
+            read: document.getElementById('readMode')
+        };
+        const modal = document.getElementById('termsModal');
+        const checkboxes = {
+            create: document.getElementById('agreeCreate'),
+            read: document.getElementById('agreeRead')
+        };
+        const buttons = {
+            create: document.getElementById('generateBtn'),
+            read: document.getElementById('viewBtn')
+        };
+
+        // --- UI LOGIC --- //
+
+        function toggleModal(show) {
+            if (show) modal.classList.add('active');
+            else modal.classList.remove('active');
+        }
+
+        // Close modal on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) toggleModal(false);
+        });
+
+        // Toggle Buttons based on Checkbox
+        checkboxes.create.addEventListener('change', (e) => {
+            buttons.create.disabled = !e.target.checked;
+        });
+
+        checkboxes.read.addEventListener('change', (e) => {
+            buttons.read.disabled = !e.target.checked;
+        });
+
+        // --- CRYPTO UTILS --- //
+
+        const textEncoder = new TextEncoder();
+        const textDecoder = new TextDecoder();
+
+        function buf2base64(buffer) {
+            return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function base642buf(str) {
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (str.length % 4) str += '=';
+            const binStr = atob(str);
+            const buf = new Uint8Array(binStr.length);
+            for (let i = 0; i < binStr.length; i++) buf[i] = binStr.charCodeAt(i);
+            return buf.buffer;
+        }
+
+        async function getKeyMaterial(password) {
+            return window.crypto.subtle.importKey(
+                "raw",
+                textEncoder.encode(password),
+                { name: "PBKDF2" },
+                false,
+                ["deriveKey"]
+            );
+        }
+
+        async function getKey(keyMaterial, salt) {
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        // --- CORE LOGIC --- //
+
+        async function generateLink() {
+            if (!checkboxes.create.checked) {
+                alert("You must agree to the terms.");
+                return;
+            }
+
+            const message = document.getElementById('secretMessage').value;
+            const password = document.getElementById('encryptPassword').value;
+
+            // New Custom Logic
+            const timeValue = parseInt(document.getElementById('timeValue').value) || 0;
+            const timeUnit = document.getElementById('timeUnit').value;
+            const burnOnRead = document.getElementById('burnCheck').checked;
+
+            if (!message || !password) {
+                alert("Please enter both a message and a password.");
+                return;
+            }
+
+            // Calculate Expiration
+            let ttlMinutes = 0;
+            if (timeValue > 0) {
+                if (timeUnit === 'minutes') ttlMinutes = timeValue;
+                if (timeUnit === 'hours') ttlMinutes = timeValue * 60;
+                if (timeUnit === 'days') ttlMinutes = timeValue * 1440;
+            }
+
+            const now = Date.now();
+            const expiresAt = ttlMinutes > 0 ? now + (ttlMinutes * 60 * 1000) : null;
+
+            const payload = JSON.stringify({
+                msg: message,
+                exp: expiresAt,
+                burn: burnOnRead,
+                salt: Math.random().toString(36).substring(7)
+            });
+
+            try {
+                // Encryption Process
+                const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+                const keyMaterial = await getKeyMaterial(password);
+                const key = await getKey(keyMaterial, salt);
+
+                const encrypted = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    textEncoder.encode(payload)
+                );
+
+                const combined = new Uint8Array(salt.byteLength + iv.byteLength + encrypted.byteLength);
+                combined.set(salt, 0);
+                combined.set(iv, salt.byteLength);
+                combined.set(new Uint8Array(encrypted), salt.byteLength + iv.byteLength);
+
+                const hash = buf2base64(combined);
+
+                const link = `${window.location.origin}${window.location.pathname}#${hash}`;
+                document.getElementById('shareLink').value = link;
+
+                showScreen('result');
+            } catch (e) {
+                console.error(e);
+                alert("Encryption failed. Please use a modern browser.");
+            }
+        }
+
+        async function attemptDecrypt() {
+            if (!checkboxes.read.checked) {
+                alert("You must agree to the terms.");
+                return;
+            }
+
+            const password = document.getElementById('decryptPassword').value;
+            if (!password) return;
+
+            const hash = window.location.hash.substring(1);
+            if (!hash) return;
+
+            if (localStorage.getItem('burned_' + hash)) {
+                showError("Message has already been destroyed on this device.");
+                return;
+            }
+
+            try {
+                const combined = new Uint8Array(base642buf(hash));
+
+                const salt = combined.slice(0, 16);
+                const iv = combined.slice(16, 28);
+                const ciphertext = combined.slice(28);
+
+                const keyMaterial = await getKeyMaterial(password);
+                const key = await getKey(keyMaterial, salt);
+
+                const decryptedBuffer = await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    ciphertext
+                );
+
+                const decryptedText = textDecoder.decode(decryptedBuffer);
+                const data = JSON.parse(decryptedText);
+
+                // Check Expiration (if set)
+                if (data.exp && Date.now() > data.exp) {
+                    showError("This message has expired and self-destructed.");
+                    return;
+                }
+
+                const timerDisplay = document.getElementById('destroyTimer');
+                let timerText = "";
+
+                // Check Burn on Read
+                if (data.burn) {
+                    localStorage.setItem('burned_' + hash, 'true');
+                    timerText += "This message will be deleted from this browser immediately after you leave.";
+                }
+
+                // Show Expiration Date if active
+                if (data.exp) {
+                    const expDate = new Date(data.exp).toLocaleString();
+                    if (timerText) timerText += "<br>";
+                    timerText += `Automatic Expiration: ${expDate}`;
+                }
+
+                if (!data.burn && !data.exp) {
+                    timerText = "Message persists until manually cleared.";
+                }
+
+                timerDisplay.innerHTML = timerText;
+
+                // Success
+                document.getElementById('decryptedContent').innerText = data.msg;
+                document.getElementById('decryptInputArea').style.display = 'none';
+                document.getElementById('messageDisplay').classList.remove('hidden');
+                document.getElementById('errorDisplay').classList.add('hidden');
+
+            } catch (e) {
+                console.error(e);
+                showError("Decryption failed. Incorrect password.");
+            }
+        }
+
+        // --- UI FUNCTIONS --- //
+
+        function showScreen(name) {
+            Object.values(screens).forEach(el => {
+                el.classList.remove('visible-anim');
+                el.classList.add('hidden-anim');
+                setTimeout(() => el.style.display = 'none', 300);
+            });
+
+            setTimeout(() => {
+                const el = screens[name];
+                el.style.display = 'block';
+                requestAnimationFrame(() => {
+                    el.classList.remove('hidden-anim');
+                    el.classList.add('visible-anim');
+                });
+            }, 300);
+        }
+
+        function showError(msg) {
+            const errDiv = document.getElementById('errorDisplay');
+            document.getElementById('errorText').innerText = msg;
+            errDiv.classList.remove('hidden');
+            // Shake animation
+            errDiv.classList.add('animate-[bounce_0.5s_ease-in-out]');
+            setTimeout(() => errDiv.classList.remove('animate-[bounce_0.5s_ease-in-out]'), 500);
+        }
+
+        function copyLink() {
+            const copyText = document.getElementById("shareLink");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+
+            const btn = document.querySelector('button[onclick="copyLink()"]');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="check" class="w-5 h-5 text-green-600"></i>`;
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                lucide.createIcons();
+            }, 2000);
+        }
+
+        async function shareLinkNative() {
+            const link = document.getElementById("shareLink").value;
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Secure Message',
+                        text: 'I sent you a secure encrypted message.',
+                        url: link
+                    });
+                } catch (err) {
+                    // User cancelled
+                }
+            } else {
+                copyLink();
+                alert("Link copied to clipboard!");
+            }
+        }
+
+        function resetApp() {
+            window.location.hash = '';
+            location.reload();
+        }
+
+        function checkRoute() {
+            if (window.location.hash.length > 1) {
+                showScreen('read');
+                setTimeout(() => document.getElementById('decryptPassword').focus(), 500);
+            } else {
+                showScreen('create');
+            }
+        }
+
+        window.addEventListener('load', checkRoute);
+        window.addEventListener('hashchange', checkRoute);
+
+    </script>
+</body>
+
+</html>

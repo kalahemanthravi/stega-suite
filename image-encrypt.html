@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stega Suite - Secure Image Encryption</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        .tab-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 1s linear infinite;
+            /* Safari */
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="border-b border-slate-700 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-shield-halved text-blue-400 text-2xl"></i>
+                    <span class="font-bold text-xl tracking-tight">Stega<span class="text-blue-400">Suite</span></span>
+                </div>
+                <div>
+                    <button onclick="togglePolicyModal()"
+                        class="text-sm text-slate-400 hover:text-white transition-colors">
+                        Privacy & Terms
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-5xl">
+
+        <!-- Header Section -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">Client-Side Image Encryption</h1>
+            <p class="text-slate-400 max-w-2xl mx-auto">
+                Transform your images into secure, encrypted text strings using AES-GCM.
+                Your data never leaves your browser.
+            </p>
+        </div>
+
+        <!-- Tool Container -->
+        <div class="glass-panel rounded-2xl shadow-2xl overflow-hidden">
+
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-700">
+                <button onclick="switchTab('encrypt')" id="tab-encrypt"
+                    class="tab-btn active w-1/2 py-4 text-center font-medium transition-all border-b-2 hover:bg-slate-800/50">
+                    <i class="fa-solid fa-lock mr-2"></i> Encrypt Image
+                </button>
+                <button onclick="switchTab('decrypt')" id="tab-decrypt"
+                    class="tab-btn w-1/2 py-4 text-center font-medium text-slate-400 transition-all border-b-2 border-transparent hover:bg-slate-800/50">
+                    <i class="fa-solid fa-unlock mr-2"></i> Decrypt Text
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-6 md:p-8">
+
+                <!-- ENCRYPT PANEL -->
+                <div id="panel-encrypt" class="block animate-fade-in">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <!-- Input Side -->
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">1. Select Image</label>
+                                <div class="relative group">
+                                    <input type="file" id="imageInput" accept="image/*" class="hidden"
+                                        onchange="handleImageSelect(this)">
+                                    <label for="imageInput"
+                                        class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer bg-slate-800/50 hover:bg-slate-800 hover:border-blue-500 transition-all group-hover:text-blue-400">
+                                        <div id="uploadPlaceholder" class="flex flex-col items-center">
+                                            <i
+                                                class="fa-regular fa-image text-3xl mb-3 text-slate-400 group-hover:text-blue-400"></i>
+                                            <p class="text-sm text-slate-400">Click to upload or drag & drop</p>
+                                            <p class="text-xs text-slate-500 mt-1">PNG, JPG, WEBP</p>
+                                        </div>
+                                        <img id="previewThumb"
+                                            class="hidden max-h-full max-w-full rounded-lg object-contain p-2" />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">2. Set Password</label>
+                                <div class="relative">
+                                    <input type="password" id="encryptPassword" placeholder="Enter a strong password"
+                                        class="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                                    <button onclick="togglePasswordVisibility('encryptPassword', this)"
+                                        class="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-yellow-500 mt-2">
+                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                                    Do not forget this password. Recovery is impossible without it.
+                                </p>
+                            </div>
+
+                            <!-- Terms Checkbox for Encryption -->
+                            <div class="flex items-start gap-3 p-3 bg-red-900/20 rounded-lg border border-red-900/50">
+                                <input type="checkbox" id="encryptTermsCheck" onchange="toggleEncryptButton()"
+                                    class="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                                <label for="encryptTermsCheck"
+                                    class="text-xs text-slate-300 cursor-pointer select-none leading-relaxed">
+                                    I agree to the <button onclick="togglePolicyModal()"
+                                        class="text-blue-400 hover:text-blue-300 underline font-semibold">Terms &
+                                        Conditions</button>. I acknowledge that the developers are <strong>not
+                                        responsible for any data loss</strong>, even if the encryption is cracked.
+                                </label>
+                            </div>
+
+                            <button onclick="processEncryption()" id="btnEncrypt" disabled
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none disabled:bg-slate-700">
+                                <i class="fa-solid fa-lock mr-2"></i> Encrypt Image
+                            </button>
+                        </div>
+
+                        <!-- Output Side -->
+                        <div class="flex flex-col h-full">
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Encrypted Output</label>
+                            <div class="relative flex-grow">
+                                <textarea id="encryptedOutput" readonly placeholder="Encrypted text will appear here..."
+                                    class="w-full h-64 md:h-full bg-slate-900 border border-slate-700 rounded-lg p-4 font-mono text-xs text-slate-400 resize-none focus:outline-none"></textarea>
+                                <div class="absolute top-2 right-2 flex gap-2">
+                                    <button onclick="copyToClipboard('encryptedOutput')"
+                                        class="p-2 bg-slate-800 rounded hover:bg-slate-700 text-slate-300 transition-colors"
+                                        title="Copy to Clipboard">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex gap-3">
+                                <button onclick="downloadText()" id="btnDownload" disabled
+                                    class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-slate-600">
+                                    <i class="fa-solid fa-download mr-2"></i> Download as .txt
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DECRYPT PANEL -->
+                <div id="panel-decrypt" class="hidden animate-fade-in">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <!-- Input Side -->
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">1. Input Encrypted
+                                    Data</label>
+                                <div class="relative">
+                                    <textarea id="decryptInput" placeholder="Paste the encrypted text string here..."
+                                        class="w-full h-40 bg-slate-900 border border-slate-700 rounded-lg p-4 font-mono text-xs text-slate-300 resize-none focus:outline-none focus:border-blue-500 transition-colors"></textarea>
+                                    <label for="textFileInput"
+                                        class="absolute bottom-3 right-3 cursor-pointer bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded border border-slate-600 transition-colors text-slate-300">
+                                        <i class="fa-solid fa-file-upload mr-1"></i> Load File
+                                    </label>
+                                    <input type="file" id="textFileInput" accept=".txt" class="hidden"
+                                        onchange="handleTextFileSelect(this)">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">2. Enter Password</label>
+                                <div class="relative">
+                                    <input type="password" id="decryptPassword"
+                                        placeholder="Enter the password used for encryption"
+                                        class="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                                    <button onclick="togglePasswordVisibility('decryptPassword', this)"
+                                        class="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Terms Checkbox for Decryption -->
+                            <div class="flex items-start gap-3 p-3 bg-red-900/20 rounded-lg border border-red-900/50">
+                                <input type="checkbox" id="decryptTermsCheck" onchange="toggleDecryptButton()"
+                                    class="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                                <label for="decryptTermsCheck"
+                                    class="text-xs text-slate-300 cursor-pointer select-none leading-relaxed">
+                                    I agree to the <button onclick="togglePolicyModal()"
+                                        class="text-blue-400 hover:text-blue-300 underline font-semibold">Terms &
+                                        Conditions</button>. I understand the tool is provided "as-is" and developers
+                                    assume <strong>no liability</strong>.
+                                </label>
+                            </div>
+
+                            <button onclick="processDecryption()" id="btnDecrypt" disabled
+                                class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] shadow-lg shadow-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none disabled:bg-slate-700">
+                                <i class="fa-solid fa-unlock mr-2"></i> Decrypt & Restore Image
+                            </button>
+                        </div>
+
+                        <!-- Result Side -->
+                        <div
+                            class="flex flex-col h-full bg-slate-900/50 rounded-xl border border-slate-700/50 p-4 items-center justify-center min-h-[300px]">
+                            <div id="decryptPlaceholder" class="text-center text-slate-500">
+                                <i class="fa-solid fa-image text-4xl mb-3 opacity-50"></i>
+                                <p>Decrypted image will appear here</p>
+                            </div>
+                            <img id="decryptedImage"
+                                class="hidden max-w-full max-h-[400px] rounded-lg shadow-lg object-contain"
+                                alt="Decrypted Result">
+                            <a id="downloadDecryptedLink"
+                                class="hidden mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                                download="decrypted-image.png">
+                                <i class="fa-solid fa-download mr-2"></i> Save Image
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- Footer -->
+        <div class="mt-12 max-w-4xl mx-auto animate-fade-in mb-8">
+            <div class="glass-panel rounded-2xl p-8 border border-slate-700/50">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                        <i class="fa-solid fa-circle-info text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">How It Works</h2>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 text-slate-300">
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-blue-400">What is this tool?</h3>
+                        <p class="text-sm leading-relaxed">
+                            This tool converts any image file into a highly secure, encrypted text string.
+                            Instead of saving an image file, you get a text file that looks like gibberish.
+                            This text can only be turned back into an image using the correct password.
+                        </p>
+                        <p class="text-sm leading-relaxed">
+                            This is useful for sending images through text-only channels (like emails, code snippets,
+                            or messaging apps) or storing images securely as text.
+                        </p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-blue-400">Usage Instructions</h3>
+                        <ul class="space-y-2 text-sm list-disc list-inside marker:text-blue-500">
+                            <li><strong>To Encrypt:</strong> Upload an image, set a password, and click Encrypt. Copy
+                                the result or download it as a .txt file.</li>
+                            <li><strong>To Decrypt:</strong> Switch to the 'Decrypt' tab. Paste the encrypted text
+                                string (or upload the .txt file), enter your password, and click Decrypt.</li>
+                            <li><strong>Important:</strong> Provide the exact same password used during encryption. If
+                                the text string is modified even slightly, decryption will fail.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 mt-auto py-6 bg-slate-900">
+        <div class="container mx-auto px-4 text-center text-slate-500 text-sm">
+            <p>&copy; 2026 Stega Suite. Secure Client-Side Encryption.</p>
+        </div>
+    </footer>
+
+    <!-- Policy Modal -->
+    <div id="policyModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-8 relative shadow-2xl">
+                <button onclick="togglePolicyModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+
+                <h2 class="text-2xl font-bold mb-6 text-white">Privacy Policy & Terms (2026)</h2>
+
+                <div class="space-y-4 text-slate-300 text-sm leading-relaxed max-h-[60vh] overflow-y-auto pr-2">
+                    <section>
+                        <h3 class="text-blue-400 font-bold text-lg mb-2">1. Zero-Knowledge & Local Processing</h3>
+                        <p>Stega Suite operates entirely within your web browser. <strong>No images, passwords, or
+                                encrypted data are ever sent to a server.</strong> All processing happens locally on
+                            your device using the Web Crypto API.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="text-blue-400 font-bold text-lg mb-2">2. Data Permanence</h3>
+                        <p>We do not store your data. If you close the tab or refresh the page, any unsaved work is lost
+                            immediately. We cannot recover lost files.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="text-blue-400 font-bold text-lg mb-2">3. Password Responsibility</h3>
+                        <p>Your encryption password acts as the cryptographic key. <strong>If you lose or forget your
+                                password, your data is permanently irretrievable.</strong> There is no "reset password"
+                            feature because we do not know your password.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="text-blue-400 font-bold text-lg mb-2">4. Output Format</h3>
+                        <p>The output is a text string containing your encrypted image data. This text string can be
+                            saved as a .txt file. Any alteration to this text string (even a single character) will
+                            likely result in decryption failure.</p>
+                    </section>
+
+                    <section>
+                        <h3 class="text-red-400 font-bold text-lg mb-2">5. Strict Liability Disclaimer</h3>
+                        <p class="mb-2"><strong>WE ARE NOT RESPONSIBLE FOR ANY DATA LOSS.</strong></p>
+                        <p class="mb-2">While we utilize strong industry-standard encryption (AES-GCM), we make no
+                            guarantees regarding the absolute invulnerability of the encryption.</p>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>If the encryption is cracked by third parties, we are not responsible.</li>
+                            <li>If you lose your password, we are not responsible.</li>
+                            <li>If the output file is corrupted, we are not responsible.</li>
+                        </ul>
+                        <p class="mt-2">This security tool is provided "AS IS" without warranty of any kind. By using
+                            this website, you explicitly release the developers from any liability regarding your data
+                            security.</p>
+                    </section>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-slate-800 text-center">
+                    <button onclick="togglePolicyModal()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"
+        class="fixed bottom-5 right-5 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-xl border border-slate-700 transform translate-y-24 transition-transform duration-300 flex items-center gap-3 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-green-500"></i>
+        <span id="toastMessage">Notification</span>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let currentImageBase64 = null;
+        let isProcessing = false;
+
+        // --- UI Interactions ---
+
+        function switchTab(tab) {
+            const tabs = ['encrypt', 'decrypt'];
+
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const panel = document.getElementById(`panel-${t}`);
+
+                if (t === tab) {
+                    btn.classList.add('active', 'border-b-2', 'border-blue-500', 'text-white');
+                    btn.classList.remove('text-slate-400', 'border-transparent');
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('active', 'border-b-2', 'border-blue-500', 'text-white');
+                    btn.classList.add('text-slate-400', 'border-transparent');
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
+        function togglePolicyModal() {
+            const modal = document.getElementById('policyModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function toggleEncryptButton() {
+            const btn = document.getElementById('btnEncrypt');
+            const check = document.getElementById('encryptTermsCheck');
+            btn.disabled = !check.checked;
+        }
+
+        function toggleDecryptButton() {
+            const btn = document.getElementById('btnDecrypt');
+            const check = document.getElementById('decryptTermsCheck');
+            btn.disabled = !check.checked;
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toastMessage');
+            const icon = document.getElementById('toastIcon');
+
+            msg.textContent = message;
+
+            if (type === 'error') {
+                icon.className = 'fa-solid fa-circle-exclamation text-red-500';
+            } else {
+                icon.className = 'fa-solid fa-circle-check text-green-500';
+            }
+
+            toast.classList.remove('translate-y-24');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24');
+            }, 3000);
+        }
+
+        function handleImageSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit warning
+                showToast('Warning: Large images may take longer to process.', 'error');
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                currentImageBase64 = e.target.result;
+                const img = document.getElementById('previewThumb');
+                const placeholder = document.getElementById('uploadPlaceholder');
+
+                img.src = currentImageBase64;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+
+                // Clear previous output
+                document.getElementById('encryptedOutput').value = '';
+                document.getElementById('btnDownload').disabled = true;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleTextFileSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('decryptInput').value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        function copyToClipboard(elementId) {
+            const copyText = document.getElementById(elementId);
+            if (!copyText.value) return;
+
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            document.execCommand('copy'); // Fallback for iframe restrictions
+
+            showToast('Copied to clipboard');
+        }
+
+        function downloadText() {
+            const content = document.getElementById('encryptedOutput').value;
+            if (!content) return;
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `encrypted_image_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --- Encryption Logic (Web Crypto API) ---
+
+        const ENC_ALGO = 'AES-GCM';
+        const SALT_LEN = 16;
+        const IV_LEN = 12;
+        const ITERATIONS = 100000;
+        const HASH_ALGO = 'SHA-256';
+
+        // Convert string/buffer helpers
+        const enc = new TextEncoder();
+        const dec = new TextDecoder();
+
+        function base64ToBuf(b64) {
+            const binString = window.atob(b64);
+            const len = binString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function bufToBase64(buf) {
+            const bytes = new Uint8Array(buf);
+            let binary = '';
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        async function getKeyMaterial(password) {
+            return window.crypto.subtle.importKey(
+                "raw",
+                enc.encode(password),
+                { name: "PBKDF2" },
+                false,
+                ["deriveBits", "deriveKey"]
+            );
+        }
+
+        async function getKey(keyMaterial, salt) {
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: ITERATIONS,
+                    hash: HASH_ALGO
+                },
+                keyMaterial,
+                { name: ENC_ALGO, length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function processEncryption() {
+            // Checkbox check
+            const termsCheck = document.getElementById('encryptTermsCheck');
+            if (!termsCheck.checked) {
+                showToast('You must accept the terms first.', 'error');
+                return;
+            }
+
+            const password = document.getElementById('encryptPassword').value;
+            const btn = document.getElementById('btnEncrypt');
+
+            if (!currentImageBase64) {
+                showToast('Please upload an image first.', 'error');
+                return;
+            }
+            if (!password) {
+                showToast('Please enter a password.', 'error');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Encrypting...';
+
+                // 1. Generate random salt and IV
+                const salt = window.crypto.getRandomValues(new Uint8Array(SALT_LEN));
+                const iv = window.crypto.getRandomValues(new Uint8Array(IV_LEN));
+
+                // 2. Derive Key
+                const keyMaterial = await getKeyMaterial(password);
+                const key = await getKey(keyMaterial, salt);
+
+                // 3. Encrypt Image Data
+                const dataToEncrypt = enc.encode(currentImageBase64);
+                const encryptedContent = await window.crypto.subtle.encrypt(
+                    {
+                        name: ENC_ALGO,
+                        iv: iv
+                    },
+                    key,
+                    dataToEncrypt
+                );
+
+                // 4. Pack the data
+                const payload = {
+                    salt: bufToBase64(salt),
+                    iv: bufToBase64(iv),
+                    data: bufToBase64(encryptedContent)
+                };
+
+                const outputString = `STEGA_V1:${JSON.stringify(payload)}`;
+
+                document.getElementById('encryptedOutput').value = outputString;
+                document.getElementById('btnDownload').disabled = false;
+                showToast('Encryption Complete!');
+
+            } catch (err) {
+                console.error(err);
+                showToast('Encryption failed. See console.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-lock mr-2"></i> Encrypt Image';
+                // Re-enable/disable based on checkbox state to be safe
+                toggleEncryptButton();
+            }
+        }
+
+        async function processDecryption() {
+            // Checkbox check
+            const termsCheck = document.getElementById('decryptTermsCheck');
+            if (!termsCheck.checked) {
+                showToast('You must accept the terms first.', 'error');
+                return;
+            }
+
+            const encryptedString = document.getElementById('decryptInput').value.trim();
+            const password = document.getElementById('decryptPassword').value;
+            const btn = document.getElementById('btnDecrypt');
+            const resultImg = document.getElementById('decryptedImage');
+            const placeholder = document.getElementById('decryptPlaceholder');
+            const dlLink = document.getElementById('downloadDecryptedLink');
+
+            if (!encryptedString) {
+                showToast('Please enter encrypted text.', 'error');
+                return;
+            }
+            if (!password) {
+                showToast('Please enter the password.', 'error');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Decrypting...';
+
+                // 1. Parse Input
+                if (!encryptedString.startsWith('STEGA_V1:')) {
+                    throw new Error('Invalid format. Missing header.');
+                }
+
+                const jsonStr = encryptedString.substring(9); // Remove "STEGA_V1:"
+                let payload;
+                try {
+                    payload = JSON.parse(jsonStr);
+                } catch (e) {
+                    throw new Error('Corrupt data structure.');
+                }
+
+                // 2. Extract components
+                const salt = base64ToBuf(payload.salt);
+                const iv = base64ToBuf(payload.iv);
+                const encryptedData = base64ToBuf(payload.data);
+
+                // 3. Derive Key
+                const keyMaterial = await getKeyMaterial(password);
+                const key = await getKey(keyMaterial, salt);
+
+                // 4. Decrypt
+                const decryptedBuffer = await window.crypto.subtle.decrypt(
+                    {
+                        name: ENC_ALGO,
+                        iv: iv
+                    },
+                    key,
+                    encryptedData
+                );
+
+                const decryptedBase64 = dec.decode(decryptedBuffer);
+
+                // 5. Display
+                resultImg.src = decryptedBase64;
+                resultImg.classList.remove('hidden');
+                dlLink.href = decryptedBase64;
+                dlLink.classList.remove('hidden');
+                dlLink.classList.add('inline-flex');
+                placeholder.classList.add('hidden');
+
+                showToast('Decryption Successful!');
+
+            } catch (err) {
+                console.error(err);
+                showToast('Decryption failed. Wrong password or corrupt data.', 'error');
+                resultImg.classList.add('hidden');
+                dlLink.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-unlock mr-2"></i> Decrypt & Restore Image';
+                // Re-enable/disable based on checkbox state
+                toggleDecryptButton();
+            }
+        }
+    </script>
+</body>
+
+</html>
